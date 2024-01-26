@@ -3,27 +3,28 @@
 % Parameters are loaded with params.m
 run('params.m');
 
-% Omega
-w = 2*pi*frequency; 
+%Create random qpsk signal
+%Modulate signal M-PSK 
+M = 4;
+%Assume data is known (random for fun)
+data = randi([0 M-1],1000,1);
+txSig = pskmod(data,M, pi/M, 'gray'); %input, modulation order, phase offset, symbol order
+%scatterplot(txSig);
 
 
-% Calculate the time vector
-t = 0:1/fs:duration-1/fs;
 
 
-% Generate the sinusoidal signal
-s1 = amplitude*exp(1i*w*t)+(amplitude/2);
-s1 = s1(:); % Transpose it, but DON'T complex conjugate as s1' does
 
 % Setup PlutoSDR System object
 tx = sdrtx('Pluto');
 tx.CenterFrequency = fc;
 tx.BasebandSampleRate = fs;
-tx.Gain = -10; 
+tx.Gain = 0; 
+
 
 % Transmit the signal
 disp('Starting transmission...');
-transmitRepeat(tx, s1); % Continuously transmit the signal
+transmitRepeat(tx, txSig); % Continuously transmit the signal
 
 % Stop the transmission after a specified duration
 %pause(duration);

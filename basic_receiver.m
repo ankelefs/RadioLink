@@ -10,7 +10,10 @@ rx.CenterFrequency = fc;
 rx.BasebandSampleRate = fs;
 rx.SamplesPerFrame = numSamples;
 rx.OutputDataType = 'double';
+rxData = rx();
+scatterplot(rxData);
 
+rxSig = pskdemod(rxData, M,pi/M,'gray');
 % Spectrum analyze
 spectrumAnalyze(rx);
 release(spectrumAnalyzerObj);

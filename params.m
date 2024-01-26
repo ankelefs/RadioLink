@@ -6,6 +6,14 @@ numSamples = 1024; % Number of samples per frame
 
 %Additional parameters for the transmitter
 duration = 5;      %Duration of signal in seconds
-amplitude = 0.75;  
-frequency = 100e3; %Frequency of the baseband wave
 
+
+%Think this is useless if we use psk
+%amplitude = 0.75;  
+%frequency = 100e3; %Frequency of the baseband wave
+%w = 2*pi*frequency; 
+% Calculate the time vector
+%t = 0:1/fs:duration-1/fs;
+% Generate the sinusoidal signal
+%s1 = amplitude*exp(1i*w*t);
+%s1 = s1(:); % Transpose it, but DON'T complex conjugate as s1' does

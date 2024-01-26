@@ -9,9 +9,6 @@ function spectrumAnalyze(rx)
     'Title', 'Real-Time Spectrum of Received Signal', ...
     'FrequencySpan', 'Full'); 
 
-
-    
-
     disp('Starting real-time spectrum analysis. Close the Spectrum Analyzer window to stop.');
     keepRunning = true;
     while keepRunning
