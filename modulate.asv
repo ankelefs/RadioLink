@@ -1,3 +1,4 @@
+
 % Modulate signal M-PSK 
 M = 4;
 % Assume data is known (random for fun)
@@ -16,17 +17,20 @@ rrcFilter = rcosdesign(rolloff, span, sps);
 txSigFiltered = upfirdn(txSig, rrcFilter, sps);
 
 % Channel
-rxSig = awgn(txSigFiltered, 15);
+rxSig = awgn(txSigFiltered, 30);
 
-% Filter and downsample the received signal. Remove a portion of the signal to account for the filter delay.
+% Apply Receive Filter (Filter and downsample)
 rxSigFiltered = upfirdn(rxSig, rrcFilter, 1, sps);
-rxSigFiltered = rxSigFiltered(span+1:end-span);
+
+% Correct for delay
+delay = span * sps / 2;
+rxSigFiltered = rxSigFiltered(delay+1:end-delay);
 
 % Demodulate
 rxData = pskdemod(rxSigFiltered, M, pi/M, 'gray');
 
 % Error calculation
-numErrs = symerr(data, rxData);
+% numErrs = symerr(data, rxData);
 
 % Scatter plots
 scatterplot(txSig);
