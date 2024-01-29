@@ -1,11 +1,11 @@
 % Modulate signal M-PSK 
 M = 4;
 % Assume data is known (random for fun)
-data = randi([0 M-1], 1000, 1);
+data = randi([0 M-1], 1000000, 1);
 txSig = pskmod(data, M, pi/M, 'gray'); % input, modulation order, phase offset, symbol order
 
 % RRC Filter parameters
-rolloff = 0.25; % Roll-off factor
+rolloff = 0.5;  % Roll-off factor
 span = 10;      % Filter span in symbols
 sps = 4;        % Samples per symbol
 
@@ -16,7 +16,12 @@ rrcFilter = rcosdesign(rolloff, span, sps);
 txSigFiltered = upfirdn(txSig, rrcFilter, sps);
 
 % Channel
-rxSig = awgn(txSigFiltered, 15);
+rxSig = awgn(txSigFiltered, 10);
+
+
+% Apply a phase shift
+phi = 0; % Phase shift of 45 degrees
+rxSig = rxSig * exp(1i * phi);
 
 % Filter and downsample the received signal. Remove a portion of the signal to account for the filter delay.
 rxSigFiltered = upfirdn(rxSig, rrcFilter, 1, sps);
