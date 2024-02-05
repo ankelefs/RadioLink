@@ -25,7 +25,7 @@ rxSig = awgn(txSigFiltered, 20);
 % Simulate Frequency Offset
 Fs = 1e6; % Sample rate in samples per symbol
 %frequencyOffset = randi([1000 10000]); % Frequency offset in Hz
-frequencyOffset = 100000;
+frequencyOffset = 10000;
 t = (0:length(rxSig)-1)'/Fs; % Time vector in seconds
 rxSig = rxSig .* exp(1i * 2 * pi * frequencyOffset * t); % Apply frequency offset
 
@@ -48,7 +48,7 @@ rxSigFiltered = upfirdn(rxSig, rrcFilter, 1, sps);
 rxSigFiltered = rxSigFiltered(span+1:end-span);
 
 %coarse frequency compensation
-[rxSigCompensated,estimatedFreqOffset] = coarseFreqComp(rxSigFiltered, Fs,M, 1000);
+[rxSigCompensated,estimatedFreqOffset] = coarseFreqComp(rxSigFiltered, Fs, 1000);
 
 % Demodulate
 rxData = pskdemod(rxSigCompensated, M, pi/M, 'gray');
@@ -58,13 +58,13 @@ numErrs = symerr(data, rxData);
 
 % Scatter plots
 %scatterplot(txSig);
-%scatterplot(rxSig);
+scatterplot(rxSig);
 scatterplot(rxSigFiltered);
 scatterplot(rxSigCompensated);
 %eyediagram(rxSigFiltered,3);
 
 %fft
-doFFT(rxSigFiltered, M, Fs);
+doFFT(=
 doFFT(rxSigCompensated, M, Fs);
 
 
