@@ -2,11 +2,14 @@
 
 % Set recording parameters
 Fs = 4000;  % Sample rate (Hz)
-recordDuration = 5;  % Recording duration in seconds (100ms)
+recordDuration = 3;  % Recording duration in seconds (100ms)
 numChannels = 1;  % Number of audio channels
 
 % Create audiorecorder object with specified parameters
-recObj = audiorecorder(Fs, 8, numChannels);
+BitDepth = 8;
+recObj = audiorecorder(Fs, BitDepth, numChannels);
+
+
 
 fprintf('Audio Recorder Properties:\n');
 fprintf('SampleRate: %d\n', recObj.SampleRate);
@@ -20,15 +23,56 @@ recordblocking(recObj, recordDuration);
 % Retrieve the recorded audio data
 audioData = getaudiodata(recObj);
 %audioData = [-0.4, 0.2, 0.3, 0.4, 1];
-%disp(audioData);
+disp(audioData);
 audioDatacon = round((audioData+1)*128);
 %disp(audioDatacon);
 % Convert audio samples to binary
-binaryData = dec2bin(audioDatacon,8);
+binaryData = dec2bin(audioDatacon,BitDepth);
 
+%--------------------------------------------------------------------------
+
+% Plot audio waveform in real-time
+% Create figure for real-time plotting
+% figure(2);
+% xlabel('Time (s)');
+% ylabel('Amplitude');
+% title('Real-time Audio Waveform');
+% ylim([-1, 1]);  % Adjust the y-axis limits as needed
+
+% Record audio for the specified duration
+record(recObj);
+
+% Plot audio waveform in real-time
+% t = [];
+% audioData = [];
+% while recObj.Running
+%     % Check if there's new data
+%     if recObj.TotalSamples > numel(audioData)
+%         % Get the latest audio data
+%         audioData = getaudiodata(recObj);
+%         
+%         % Update the time vector
+%         t = (0:length(audioData)-1) / Fs;  % Time vector
+%         
+%         % Update the plot
+%         plot(t, audioData);
+%         xlim([0, recordDuration]);  % Adjust x-axis limits as needed
+%         drawnow limitrate;                    % Update the plot
+%         
+%         % Check if recording duration has reached
+%         if recObj.TotalSamples >= recordDuration*Fs
+%             break;
+%         end
+%     end
+% end
+% 
+% % Stop recording
+% stop(recObj);
+
+%--------------------------------------------------------------------------
 
 % Display the binary data
-%disp(binaryData);
+disp(binaryData);
 
 %--------------------------------------------------------------------------
 %converting audio back
