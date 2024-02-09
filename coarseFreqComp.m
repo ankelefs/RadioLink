@@ -20,7 +20,7 @@ function [rxSigCompensated, frequencyOffsetEstimate] = coarseFreqComp(rxSig, Fs,
     end
 
     % Calculate the frequency offset estimate
-    frequencyOffsetEstimate = ((peakIndex-1) * Fs / Nfft)/M; % Adjusted peakIndex by -1 for correct indexing
+    frequencyOffsetEstimate = ((peakIndex-1) * Fs / Nfft)/M/M; % Adjusted peakIndex by -1 for correct indexing
 
     % Time vector for the entire signal
     t = (0:length(rxSig)-1)'/Fs;
