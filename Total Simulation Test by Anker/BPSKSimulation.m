@@ -20,9 +20,9 @@ signalTime = (0:signalLength - 1)*samplingPeriod;
 AWGNScaleFactor = 0.2;            % Scale factor for the randn-generator.
 
 % Raised Cosine Tx Filter
-numberOfSymbolDurations = 6;                    % Filter span in symbol durations.
+numberOfSymbolDurations = 4;                    % Filter span in symbol durations.
 rollOffFactor = 0.5;                            % Roll-off factor.
-samplesPerSymbol = 10;                          % Upsampling factor [samples/symbol].
+samplesPerSymbol = 2;                           % Upsampling factor [samples/symbol].
 symbolDurationInSeconds = 1/samplesPerSymbol;   % [s]
 
 
@@ -72,12 +72,9 @@ raisedCosineFilter = raisedCosineTxFilter(numberOfSymbolDurations, rollOffFactor
 
 test = raisedCosineFilter(binarySignalArray);
 
+plot(test);
 
 
-
-g;
-for element = 1:length(bipolarSignalArray)-1
-end
 
 
 
