@@ -1,12 +1,13 @@
 % Modulate signal M-PSK 
 M = 4;
 
-% Model speech data as random (for now)
+% Model speech as random data
 data = randi([0 M-1], 10000, 1);
+%data = repmat(3,40000,1);
 
 %Pilot sequence
-%pilotSequence = repmat([1, 1, 1, 3], 1, 4); % Repeat sequence N times
-%data = [pilotSequence'; data];              % Concenate with random data
+pilotSequence = repmat([1, 1, 1, 3], 1, 4); % Repeat sequence N times
+data = [pilotSequence'; data];              % Concenate with random data
 
 % M-PSK modulate 
 txSig = pskmod(data, M, pi/M, 'gray'); % input, modulation order, phase offset, symbol order
@@ -24,8 +25,7 @@ rrcFilter = rcosdesign(rolloff, span, sps);
 txSigFiltered = upfirdn(txSig, rrcFilter, sps);
 
 % Channel
-rxSig = awgn(txSigFiltered, 15);
-
+rxSig = awgn(txSigFiltered, 50);
 
 % Simulate Frequency Offset
 Fs = 1e6; 
@@ -35,74 +35,77 @@ t = (0:length(rxSig)-1)'/(Fs*sps); % Time vector in seconds
 rxSig = rxSig .* exp(1i * 2 * pi * frequencyOffset * t); % Apply frequency offset
 
 % Apply a phase shift
-%phi = randi([60 90]); % Phase shift of x degrees
-%rxSig = rxSig * exp(1i * phi);
-
+phi = 30; % Phase shift of x degrees
+rxSig = rxSig * exp(1i * deg2rad(phi));
 
 
 
 % Filter and downsample the received signal. Remove a portion of the signal to account for the filter delay.
-rxSigFiltered = upfirdn(rxSig, rrcFilter,1,sps);
+rxSigFiltered = upfirdn(rxSig, rrcFilter,1,1);
 %doFFT(rxSigFiltered, M, Fs);
-rxSigFiltered = rxSigFiltered(span+1:end-span); %Multiply with sps if signal still oversampled
+rxSigFiltered = rxSigFiltered(sps*span+1:end-(span*sps-1)); %Multiply with sps if signal still oversampled
+
 
 % Frequency compensation -------------------------------------------
 % Coarse first
 coarseSync = comm.CoarseFrequencyCompensator( ...  
     'Modulation','QPSK', ...
     'FrequencyResolution',1, ...
-    'SampleRate',Fs); %Fs*sps if signal is still oversampled
+    'SampleRate',Fs*sps); %Fs*sps if signal is still oversampled
 
 [rxSigCoarse, freqEstimate] = coarseSync(rxSigFiltered);
 
 
 % Estimate phase offset --------------------------------------------------
-%receivedPilotSymbols = rxSigCoarse(1:length(pilotSequence)*sps);
+receivedPilotSymbols = downsample(rxSigCoarse(1:(length(pilotSequence)*sps)), sps);
 % Modulate the known pilot sequence and upsample!!!
-%expectedPilotSymbols = pskmod(pilotSequence', M, pi/M, 'gray');
-%expectedPilotSymbols = upsample(expectedPilotSymbols, sps);
+expectedPilotSymbols = pskmod(pilotSequence', M, pi/M, 'gray');
 
-%phaseDifferences = angle(receivedPilotSymbols .* conj(expectedPilotSymbols));
+phaseDifferences = angle(receivedPilotSymbols .* conj(expectedPilotSymbols));
 % Estimate the phase shift as the mean of the phase differences
-%estimatedPhaseShift = mean(phaseDifferences);
+estimatedPhaseShift = mean(phaseDifferences);
 % Correct phase shift
-%rxSigPhase = rxSigCoarse * exp(-1i * estimatedPhaseShift);
+rxSigPhase = rxSigCoarse * exp(-1i * estimatedPhaseShift);
+%rad2deg(estimatedPhaseShift)
 
 
-% Fine frequency sync
+
+% Fine frequency sync and FINE phase sync, does not work if phase offset is
+% outside of quadrant.
 fineSync = comm.CarrierSynchronizer( ...
     'DampingFactor',0.7, ...
     'NormalizedLoopBandwidth',0.01, ...
     'SamplesPerSymbol',sps, ...
     'Modulation','QPSK');
-rxSigFine = fineSync(rxSigCoarse);
+rxSigFine = fineSync(rxSigPhase);
 
 
 % Symbol Synchronizer (Timing) --------------------------------------------
-%symbolSync = comm.SymbolSynchronizer(...
-%    'TimingErrorDetector', 'Gardner (non-data-aided)', ...
-%    'DampingFactor', 0.7, ...
-%    'NormalizedLoopBandwidth', 0.01, ...
-%    'SamplesPerSymbol', sps); 
+symbolSync = comm.SymbolSynchronizer(...
+    'TimingErrorDetector', 'Gardner (non-data-aided)', ...
+    'DampingFactor', 0.7, ...
+    'NormalizedLoopBandwidth', 0.01, ...
+    'SamplesPerSymbol', sps); 
 
-% Correct timing errors
-%rxSigSync = symbolSync(rxSigFine);
+% Correct timing errors, downsamples by sps
+rxSigSync = symbolSync(rxSigFine);
 
 
 % Demodulate -------------------------------------------------------------
-rxData = pskdemod(rxSigFine, M, pi/M, 'gray');
+rxData = pskdemod(rxSigSync , M, pi/M, 'gray');
 
 % Error calculation
 numErrs = symerr(data, rxData);
 
 % Scatter plots
 %scatterplot(txSig);
-%scatterplot(rxSig);
+scatterplot(rxSig);
 scatterplot(rxSigFiltered);
 scatterplot(rxSigCoarse);
 scatterplot(rxSigPhase);
 scatterplot(rxSigFine);
-eyediagram(rxSigFine,3);
+scatterplot(rxSigSync);
+eyediagram(rxSigSync,3);
 
 %fft
 %doFFT(rxSig, M, Fs);

@@ -6,12 +6,24 @@ run('params.m');
 %Create random qpsk signal
 %Modulate signal M-PSK 
 M = 4;
-%Assume data is known (random for fun)
-data = randi([0 M-1],1000,1);
-txSig = pskmod(data,M, pi/M, 'gray'); %input, modulation order, phase offset, symbol order
+% Model speech data as known data
+data = repmat([3, 2, 1], 1, 30);
+%Pilot sequence
+pilotSequence = repmat([1, 1, 1, 3], 1, 4); % Repeat sequence N times
+data = [pilotSequence'; data'];              % Concenate with random data
+
 %scatterplot(txSig);
 
+% RRC Filter parameters
+rolloff = 0.5;  % Roll-off factor
+span = 8;      % Filter span in symbols
+sps = 4;        % Samples per symbol
 
+% Create RRC Filters
+rrcFilter = rcosdesign(rolloff, span, sps);
+
+% Apply rrcFilter to txSig. Upsample by sps
+txSigFiltered = upfirdn(txSig, rrcFilter, sps);
 
 
 
@@ -24,7 +36,7 @@ tx.Gain = 0;
 
 % Transmit the signal
 disp('Starting transmission...');
-transmitRepeat(tx, txSig); % Continuously transmit the signal
+transmitRepeat(tx, txSigFiltered); % Continuously transmit the signal
 
 % Stop the transmission after a specified duration
 %pause(duration);
