@@ -63,14 +63,9 @@ coarseSync = comm.CoarseFrequencyCompensator( ...
 
 
 %-----------------------FRAME SYNC-----------------------------------
-% PSK modulate barkerSequence used in transmission
-barkerSymbols = pskmod(barkerSequence, M, pi/M, 'gray');
-detector = comm.PreambleDetector(barkerSymbols.', 'Threshold', 4);
-idx = detector(rxSigCoarse);
-dataStartIdx = idx+1;
-% Er noe funky greier her, siste dataen er helt lik, men vi mangler 5
-% sampler på starten
-rxSigFrame = rxSigCoarse(dataStartIdx*sps:end);
+% Reconstruct the Barker sequence mapped to [0, 1, 2, 3] as used in transmission
+barkerSequenceMapped = [barkerCodeMapped, barkerCodeMapped + 2];
+barkerSymbols = pskmod(barkerSequenceMapped, M, pi/M, 'gray');
 
 
 % Estimate phase offset --------------------------------------------------
