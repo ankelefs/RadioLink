@@ -3,6 +3,7 @@ M = 4;
 
 % Model speech as random data
 data = randi([0 M-1], 10000, 1);
+data2 = randi([0 M-1],10000,1);
 %data = repmat(3,10000,1);
 
 % Barker Code sequence
@@ -12,10 +13,10 @@ barkerCodeMapped2 = barkerCodeMapped+2;
 barkerSequence = [barkerCodeMapped, barkerCodeMapped2];
 
 
-data = [barkerSequence.'; data];         % Concenate with random data
+packet = [data2;barkerSequence.'; data];         % Concenate with random data
 
 % M-PSK modulate 
-txSig = pskmod(data, M, pi/M, 'gray'); % input, modulation order, phase offset, symbol order
+txSig = pskmod(packet, M, pi/M, 'gray'); % input, modulation order, phase offset, symbol order
 
 
 % RRC Filter parameters
@@ -28,7 +29,6 @@ rrcFilter = rcosdesign(rolloff, span, sps);
 
 % Apply rrcFilter to txSig. Upsample by sps
 txSigFiltered = upfirdn(txSig, rrcFilter, sps);
-txSigBark = txSigFiltered(1:104);
 % Channel
 rxSig = awgn(txSigFiltered, 15);
 
@@ -62,15 +62,15 @@ coarseSync = comm.CoarseFrequencyCompensator( ...
 [rxSigCoarse, freqEstimate] = coarseSync(rxSigFiltered);
 
 
-%-----------------------FRAME SYNC-----------------------------------
+%----------------------------FRAME SYNC-----------------------------------
 % PSK modulate barkerSequence used in transmission
-barkerSymbols = pskmod(barkerSequence, M, pi/M, 'gray');
-detector = comm.PreambleDetector(barkerSymbols.', 'Threshold', 4);
-idx = detector(rxSigCoarse);
+barkerSymbols = upsample(pskmod(barkerSequence, M, pi/M, 'gray'),sps);
+detector = comm.PreambleDetector(barkerSymbols.', 'Threshold', 25);
+idx = detector(rxSigCoarse)
 dataStartIdx = idx+1;
 % Er noe funky greier her, siste dataen er helt lik, men vi mangler 5
 % sampler på starten
-rxSigFrame = rxSigCoarse(dataStartIdx*sps:end);
+rxSigFrame = rxSigCoarse(dataStartIdx:end);
 
 
 % Estimate phase offset --------------------------------------------------
@@ -107,12 +107,11 @@ symbolSync = comm.SymbolSynchronizer(...
 % Correct timing errors, downsamples by sps
 rxSigSync = symbolSync(rxSigFine);
 
-
 % Demodulate -------------------------------------------------------------
 rxData = pskdemod(rxSigSync , M, pi/M, 'gray');
 
 % Error calculation
-numErrs = symerr(data, rxData);
+numErrs = symerr(data, rxData)
 
 % Scatter plots
 %scatterplot(txSig);
