@@ -3,17 +3,16 @@ M = 4;
 
 % Model speech as random data
 data = randi([0 M-1], 10000, 1);
-data2 = randi([0 M-1],10000,1);
 %data = repmat(3,10000,1);
 
 % Barker Code sequence
 barkerCode = [1, 1, 1, 1, 1, -1, -1, 1, 1, -1, 1, -1, 1]; % Barker code length 13
 barkerCodeMapped = (barkerCode + 1)/2; % Mapping [-1, 1] to [0, 1] for QPSK
 barkerCodeMapped2 = barkerCodeMapped+2;
-barkerSequence = [barkerCodeMapped, barkerCodeMapped2];
+barkerSequence = [barkerCodeMapped];
 
 
-packet = [data2;barkerSequence.'; data];         % Concenate with random data
+packet = [barkerSequence.'; data];         % Concenate with random data
 
 % M-PSK modulate 
 txSig = pskmod(packet, M, pi/M, 'gray'); % input, modulation order, phase offset, symbol order
@@ -21,8 +20,8 @@ txSig = pskmod(packet, M, pi/M, 'gray'); % input, modulation order, phase offset
 
 % RRC Filter parameters
 rolloff = 0.5;  % Roll-off factor
-span = 8;      % Filter span in symbols
-sps = 4;        % Samples per symbol
+span = 12;      % Filter span in symbols
+sps = 8;        % Samples per symbol
 
 % Create RRC Filters
 rrcFilter = rcosdesign(rolloff, span, sps);
@@ -40,8 +39,8 @@ t = (0:length(rxSig)-1)'/(Fs*sps); % Time vector in seconds
 rxSig = rxSig .* exp(1i * 2 * pi * frequencyOffset * t); % Apply frequency offset
 
 % Apply a phase shift
-%phi = 30; % Phase shift of x degrees
-%rxSig = rxSig * exp(1i * deg2rad(phi));
+phi = 55; % Phase shift of x degrees
+rxSig = rxSig * exp(1i * deg2rad(phi));
 
 
 
@@ -65,25 +64,23 @@ coarseSync = comm.CoarseFrequencyCompensator( ...
 %----------------------------FRAME SYNC-----------------------------------
 % PSK modulate barkerSequence used in transmission
 barkerSymbols = upsample(pskmod(barkerSequence, M, pi/M, 'gray'),sps);
-detector = comm.PreambleDetector(barkerSymbols.', 'Threshold', 25);
+detector = comm.PreambleDetector(barkerSymbols.', 'Threshold', 15);
 idx = detector(rxSigCoarse)
 dataStartIdx = idx+1;
-% Er noe funky greier her, siste dataen er helt lik, men vi mangler 5
-% sampler på starten
 rxSigFrame = rxSigCoarse(dataStartIdx:end);
 
 
 % Estimate phase offset --------------------------------------------------
-%receivedPilotSymbols = downsample(rxSigCoarse(1:(length(pilotSequence)*sps)), sps);
+receivedPilotSymbols = downsample(rxSigCoarse(dataStartIdx-length(barkerSymbols):dataStartIdx-1), sps);
 % Modulate the known pilot sequence and upsample!!!
-%expectedPilotSymbols = pskmod(pilotSequence', M, pi/M, 'gray');
+expectedPilotSymbols = pskmod(barkerSequence, M, pi/M, 'gray');
 
-%phaseDifferences = angle(receivedPilotSymbols .* conj(expectedPilotSymbols));
+phaseDifferences = angle(receivedPilotSymbols .* (expectedPilotSymbols.'));
 % Estimate the phase shift as the mean of the phase differences
-%estimatedPhaseShift = mean(phaseDifferences);
+estimatedPhaseShift = mean(phaseDifferences);
 % Correct phase shift
-%rxSigPhase = rxSigCoarse * exp(-1i * estimatedPhaseShift);
-%rad2deg(estimatedPhaseShift)
+rxSigPhase = rxSigFrame * exp(-1i * estimatedPhaseShift);
+rad2deg(estimatedPhaseShift)
 
 
 
@@ -94,7 +91,7 @@ fineSync = comm.CarrierSynchronizer( ...
     'NormalizedLoopBandwidth',0.01, ...
     'SamplesPerSymbol',sps, ...
     'Modulation','QPSK');
-rxSigFine = fineSync(rxSigFrame);
+rxSigFine = fineSync(rxSigPhase);
 
 
 % Symbol Synchronizer (Timing) --------------------------------------------
