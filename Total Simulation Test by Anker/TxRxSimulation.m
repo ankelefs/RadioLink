@@ -1,14 +1,29 @@
 %*************************************************************************
-% Filename: TxSimulation.m
+% Filename: TxRxSimulation.m
 %
-% Contents: This file contains the Tx simulation, and is implemented with
-% several functions to more easily create its corresponding Rx block
-% implementation.
+% Contents: This file contains the full simulation of Tx and Rx. It is
+% divided into (function) blocks for ease of use.
 %*************************************************************************
 
 
-% Test signal data
+%%%%%%%%%%%%%%%%%%%%%%
+%     PARAMETERS     %
+%%%%%%%%%%%%%%%%%%%%%%
+bitsPerSymbol = 2;
+numberOfSymbols = 2^bitsPerSymbol;
+upsampleFactor = 3;
+
+% Root Raised Cosine Tx Filter
+rollOffFactor = 0.5;  
+filterSpan = 15;                          
+samplesPerSymbol = 4;  
+
+
+%%%%%%%%%%%%%%%%%%
+%     SIGNAL     %
+%%%%%%%%%%%%%%%%%%
 microphoneDataPacket = [0 1 0 0 1 0 1 1]';  % Array must be a column vector.
+
 
 
 % QPSK symbol mapping with Grey-coding (hard-defined)
