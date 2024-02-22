@@ -9,8 +9,6 @@ numChannels = 1;  % Number of audio channels
 BitDepth = 8;
 recObj = audiorecorder(Fs, BitDepth, numChannels);
 
-
-
 fprintf('Audio Recorder Properties:\n');
 fprintf('SampleRate: %d\n', recObj.SampleRate);
 fprintf('BitsPerSample: %d\n', recObj.BitsPerSample);
@@ -42,32 +40,6 @@ binaryData = dec2bin(audioDatacon,BitDepth);
 % Record audio for the specified duration
 record(recObj);
 
-% Plot audio waveform in real-time
-% t = [];
-% audioData = [];
-% while recObj.Running
-%     % Check if there's new data
-%     if recObj.TotalSamples > numel(audioData)
-%         % Get the latest audio data
-%         audioData = getaudiodata(recObj);
-%         
-%         % Update the time vector
-%         t = (0:length(audioData)-1) / Fs;  % Time vector
-%         
-%         % Update the plot
-%         plot(t, audioData);
-%         xlim([0, recordDuration]);  % Adjust x-axis limits as needed
-%         drawnow limitrate;                    % Update the plot
-%         
-%         % Check if recording duration has reached
-%         if recObj.TotalSamples >= recordDuration*Fs
-%             break;
-%         end
-%     end
-% end
-% 
-% % Stop recording
-% stop(recObj);
 
 %--------------------------------------------------------------------------
 
