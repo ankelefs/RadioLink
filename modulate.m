@@ -2,7 +2,7 @@
 M = 4;
 
 % Model speech as random data
-data = randi([0 M-1], 10<<<<<<00000, 1);
+data = randi([0 M-1], 1000000, 1);
 %data = repmat(3,10000,1);
 
 % Barker Code sequence
