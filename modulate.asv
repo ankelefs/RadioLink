@@ -9,7 +9,7 @@ data = randi([0 M-1], 10000, 1);
 barkerCode = [1, 1, 1, 1, 1, -1, -1, 1, 1, -1, 1, -1, 1]; % Barker code length 13
 barkerCodeMapped = (barkerCode + 1)/2; % Mapping [-1, 1] to [0, 1] for QPSK
 barkerCodeMapped2 = barkerCodeMapped+2;
-barkerSequence = [barkerCodeMapped, barkerCodeMapped2];
+barkerSequence = [barkerCodeMapped, barkerCodeMapped2,barkerCodeMapped, barkerCodeMapped2];
 
 
 packet = [barkerSequence.'; data];         % Concenate with random data
@@ -29,17 +29,17 @@ rrcFilter = rcosdesign(rolloff, span, sps);
 % Apply rrcFilter to txSig. Upsample by sps
 txSigFiltered = upfirdn(txSig, rrcFilter, sps);
 % Channel
-rxSig = awgn(txSigFiltered, 15);
+rxSig = awgn(txSigFiltered, 30);
 
 % Simulate Frequency Offset
 Fs = 1e6; 
 %frequencyOffset = randi([1000 10000]); % Frequency offset in Hz
-frequencyOffset = 10000;
+frequencyOffset = 0;
 t = (0:length(rxSig)-1)'/(Fs*sps); % Time vector in seconds
 rxSig = rxSig .* exp(1i * 2 * pi * frequencyOffset * t); % Apply frequency offset
 
 % Apply a phase shift
-phi = 55; % Phase shift of x degrees
+phi = 75; % Phase shift of x degrees
 rxSig = rxSig * exp(1i * deg2rad(phi));
 
 
@@ -61,28 +61,6 @@ coarseSync = comm.CoarseFrequencyCompensator( ...
 [rxSigCoarse, freqEstimate] = coarseSync(rxSigFiltered);
 
 
-%----------------------------FRAME SYNC-----------------------------------
-% PSK modulate barkerSequence used in transmission
-barkerSymbols = upsample(pskmod(barkerSequence, M, pi/M, 'gray'),sps);
-detector = comm.PreambleDetector(barkerSymbols.', 'Threshold', 25);
-idx = detector(rxSigCoarse)
-dataStartIdx = mean(idx)+1;
-rxSigFrame = rxSigCoarse(dataStartIdx:dataStartIdx+length(data));
-
-
-% Estimate phase offset --------------------------------------------------
-receivedPilotSymbols = downsample(rxSigCoarse(dataStartIdx-length(barkerSymbols):dataStartIdx), sps);
-% Modulate the known pilot sequence and upsample!!!
-expectedPilotSymbols = pskmod(barkerSequence, M, pi/M, 'gray');
-
-phaseDifferences = angle(receivedPilotSymbols .* conj(expectedPilotSymbols));
-% Estimate the phase shift as the mean of the phase differences
-estimatedPhaseShift = mean(phaseDifferences);
-% Correct phase shift
-rxSigPhase = rxSigCoarse * exp(-1i * estimatedPhaseShift);
-rad2deg(estimatedPhaseShift)
-
-
 
 % Fine frequency sync and FINE phase sync, does not work if phase offset is
 % outside of quadrant.
@@ -91,7 +69,8 @@ fineSync = comm.CarrierSynchronizer( ...
     'NormalizedLoopBandwidth',0.01, ...
     'SamplesPerSymbol',sps, ...
     'Modulation','QPSK');
-rxSigFine = fineSync(rxSigFrame);
+rxSigFine = fineSync(rxSigCoarse);
+
 
 
 % Symbol Synchronizer (Timing) --------------------------------------------
@@ -104,8 +83,43 @@ symbolSync = comm.SymbolSynchronizer(...
 % Correct timing errors, downsamples by sps
 rxSigSync = symbolSync(rxSigFine);
 
+
+%----------------------------FRAME SYNC-----------------------------------
+% PSK modulate barkerSequence used in transmission
+barkerSymbols = pskmod(barkerSequence, M, pi/M, 'gray');
+detector = comm.PreambleDetector(barkerSymbols.', 'Threshold', 30);
+idx = detector(rxSigSync)
+dataStartIdx = idx+1;
+rxSigFrame = rxSigSync(dataStartIdx:end);
+
+
+% Estimate phase offset --------------------------------------------------
+% Don't use first sample as it is centered by the timing synchronizer?
+receivedPilotSymbols = rxSigSync(dataStartIdx-length(barkerSymbols)+1:dataStartIdx-1);
+% Modulate the known pilot sequence and upsample!!!
+expectedPilotSymbols = pskmod(barkerSequence(2:end), M, pi/M, 'gray');
+
+phaseDifferences = angle(receivedPilotSymbols conj(expectedPilotSymbols.'));
+
+% Estimate the phase shift as the mean of the phase differences
+estimatedPhaseShift = mean(phaseDifferences);% Correct phase shift
+estimatedPhaseShiftDegrees = rad2deg(estimatedPhaseShift)
+
+% Possible phase shifts.
+possiblePhaseShifts = [0, 90, 180, 270, 360]; 
+
+% Find the nearest phase shift
+[~, idx] = min(abs(possiblePhaseShifts - estimatedPhaseShiftDegrees));
+nearestPhaseShiftDegrees = possiblePhaseShifts(idx);
+nearestPhaseShiftRadians = deg2rad(nearestPhaseShiftDegrees)
+
+% Correct for phase shift
+rxSigPhase = rxSigFrame * exp(-1i * nearestPhaseShiftRadians);
+
+
+
 % Demodulate -------------------------------------------------------------
-rxData = pskdemod(rxSigSync , M, pi/M, 'gray');
+rxData = pskdemod(rxSigPhase , M, pi/M, 'gray');
 
 % Error calculation
 numErrs = symerr(data, rxData)
@@ -115,10 +129,11 @@ numErrs = symerr(data, rxData)
 %scatterplot(rxSig);
 %scatterplot(rxSigFiltered);
 %scatterplot(rxSigCoarse);
-%scatterplot(rxSigPhase);
 %scatterplot(rxSigFine);
-scatterplot(rxSigSync);
-eyediagram(rxSigSync,3);
+%scatterplot(rxSigSync);
+scatterplot(rxSigFrame);
+scatterplot(rxSigPhase);
+%eyediagram(rxSigPhase,3);
 
 %fft
 %doFFT(rxSig, M, Fs);

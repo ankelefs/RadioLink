@@ -9,7 +9,7 @@ data = randi([0 M-1], 10000, 1);
 barkerCode = [1, 1, 1, 1, 1, -1, -1, 1, 1, -1, 1, -1, 1]; % Barker code length 13
 barkerCodeMapped = (barkerCode + 1)/2; % Mapping [-1, 1] to [0, 1] for QPSK
 barkerCodeMapped2 = barkerCodeMapped+2;
-barkerSequence = [barkerCodeMapped];
+barkerSequence = [barkerCodeMapped, barkerCodeMapped2,barkerCodeMapped, barkerCodeMapped2];
 
 
 packet = [barkerSequence.'; data];         % Concenate with random data
@@ -29,17 +29,17 @@ rrcFilter = rcosdesign(rolloff, span, sps);
 % Apply rrcFilter to txSig. Upsample by sps
 txSigFiltered = upfirdn(txSig, rrcFilter, sps);
 % Channel
-rxSig = awgn(txSigFiltered, 15);
+rxSig = awgn(txSigFiltered, 30);
 
 % Simulate Frequency Offset
 Fs = 1e6; 
 %frequencyOffset = randi([1000 10000]); % Frequency offset in Hz
-frequencyOffset = 10000;
+frequencyOffset = 100000;
 t = (0:length(rxSig)-1)'/(Fs*sps); % Time vector in seconds
 rxSig = rxSig .* exp(1i * 2 * pi * frequencyOffset * t); % Apply frequency offset
 
 % Apply a phase shift
-phi = 55; % Phase shift of x degrees
+phi = 160; % Phase shift of x degrees
 rxSig = rxSig * exp(1i * deg2rad(phi));
 
 
@@ -61,26 +61,43 @@ coarseSync = comm.CoarseFrequencyCompensator( ...
 [rxSigCoarse, freqEstimate] = coarseSync(rxSigFiltered);
 
 
+
+% Symbol Synchronizer (Timing) --------------------------------------------
+symbolSync = comm.SymbolSynchronizer(...
+    'TimingErrorDetector', 'Gardner (non-data-aided)', ...
+    'DampingFactor', 0.7, ...
+    'NormalizedLoopBandwidth', 0.01, ...
+    'SamplesPerSymbol', sps); 
+
+% Correct timing errors, downsamples by sps
+rxSigSync = symbolSync(rxSigCoarse);
+
+
 %----------------------------FRAME SYNC-----------------------------------
 % PSK modulate barkerSequence used in transmission
-barkerSymbols = upsample(pskmod(barkerSequence, M, pi/M, 'gray'),sps);
-detector = comm.PreambleDetector(barkerSymbols.', 'Threshold', 15);
-idx = detector(rxSigCoarse)
+barkerSymbols = pskmod(barkerSequence, M, pi/M, 'gray');
+detector = comm.PreambleDetector(barkerSymbols.', 'Threshold', 30);
+idx = detector(rxSigSync)
 dataStartIdx = idx+1;
-rxSigFrame = rxSigCoarse(dataStartIdx:end);
+rxSigFrame = rxSigSync(dataStartIdx:end);
 
 
 % Estimate phase offset --------------------------------------------------
-receivedPilotSymbols = downsample(rxSigCoarse(dataStartIdx-length(barkerSymbols):dataStartIdx-1), sps);
+% Don't use first sample as it is centered by the timing synchronizer?
+receivedPilotSymbols = rxSigSync(dataStartIdx-length(barkerSymbols)+1:dataStartIdx-1);
 % Modulate the known pilot sequence and upsample!!!
-expectedPilotSymbols = pskmod(barkerSequence, M, pi/M, 'gray');
+expectedPilotSymbols = pskmod(barkerSequence(2:end), M, pi/M, 'gray');
+scatterplot(receivedPilotSymbols(2:4))
+scatterplot(expectedPilotSymbols(2:4))
+phaseDifferences = angle(receivedPilotSymbols.* conj(expectedPilotSymbols.'));
 
-phaseDifferences = angle(receivedPilotSymbols .* (expectedPilotSymbols.'));
 % Estimate the phase shift as the mean of the phase differences
-estimatedPhaseShift = mean(phaseDifferences);
-% Correct phase shift
-rxSigPhase = rxSigFrame * exp(-1i * estimatedPhaseShift);
-rad2deg(estimatedPhaseShift)
+estPhaseShift = mean(phaseDifferences);% Correct phase shift
+estPhaseShiftDeg = rad2deg(estPhaseShift)
+% Correct for phase shift
+rxSigPhase = rxSigFrame * exp(-1i * estPhaseShift);
+
+
 
 
 
@@ -94,18 +111,10 @@ fineSync = comm.CarrierSynchronizer( ...
 rxSigFine = fineSync(rxSigPhase);
 
 
-% Symbol Synchronizer (Timing) --------------------------------------------
-symbolSync = comm.SymbolSynchronizer(...
-    'TimingErrorDetector', 'Gardner (non-data-aided)', ...
-    'DampingFactor', 0.7, ...
-    'NormalizedLoopBandwidth', 0.01, ...
-    'SamplesPerSymbol', sps); 
 
-% Correct timing errors, downsamples by sps
-rxSigSync = symbolSync(rxSigFine);
 
 % Demodulate -------------------------------------------------------------
-rxData = pskdemod(rxSigSync , M, pi/M, 'gray');
+rxData = pskdemod(rxSigFine , M, pi/M, 'gray');
 
 % Error calculation
 numErrs = symerr(data, rxData)
@@ -115,10 +124,11 @@ numErrs = symerr(data, rxData)
 %scatterplot(rxSig);
 %scatterplot(rxSigFiltered);
 %scatterplot(rxSigCoarse);
-%scatterplot(rxSigPhase);
 %scatterplot(rxSigFine);
-scatterplot(rxSigSync);
-eyediagram(rxSigSync,3);
+%scatterplot(rxSigSync);
+scatterplot(rxSigFrame);
+scatterplot(rxSigPhase);
+%eyediagram(rxSigPhase,3);
 
 %fft
 %doFFT(rxSig, M, Fs);
