@@ -2,7 +2,7 @@
 M = 4;
 
 % Model speech as random data
-data = randi([0 M-1], 10000, 1);
+data = randi([0 M-1], 10<<<<<<00000, 1);
 %data = repmat(3,10000,1);
 
 % Barker Code sequence
@@ -29,7 +29,7 @@ rrcFilter = rcosdesign(rolloff, span, sps);
 % Apply rrcFilter to txSig. Upsample by sps
 txSigFiltered = upfirdn(txSig, rrcFilter, sps);
 % Channel
-rxSig = awgn(txSigFiltered, 30);
+rxSig = awgn(txSigFiltered, 15);
 
 % Simulate Frequency Offset
 Fs = 1e6; 
@@ -76,7 +76,7 @@ rxSigSync = symbolSync(rxSigCoarse);
 %----------------------------FRAME SYNC-----------------------------------
 % PSK modulate barkerSequence used in transmission
 barkerSymbols = pskmod(barkerSequence, M, pi/M, 'gray');
-detector = comm.PreambleDetector(barkerSymbols.', 'Threshold', 30);
+detector = comm.PreambleDetector(barkerSymbols.', 'Threshold', 35);
 idx = detector(rxSigSync)
 dataStartIdx = idx+1;
 rxSigFrame = rxSigSync(dataStartIdx:end);
@@ -87,8 +87,6 @@ rxSigFrame = rxSigSync(dataStartIdx:end);
 receivedPilotSymbols = rxSigSync(dataStartIdx-length(barkerSymbols)+1:dataStartIdx-1);
 % Modulate the known pilot sequence and upsample!!!
 expectedPilotSymbols = pskmod(barkerSequence(2:end), M, pi/M, 'gray');
-scatterplot(receivedPilotSymbols(2:4))
-scatterplot(expectedPilotSymbols(2:4))
 phaseDifferences = angle(receivedPilotSymbols.* conj(expectedPilotSymbols.'));
 
 % Estimate the phase shift as the mean of the phase differences
@@ -122,12 +120,12 @@ numErrs = symerr(data, rxData)
 % Scatter plots
 %scatterplot(txSig);
 %scatterplot(rxSig);
-%scatterplot(rxSigFiltered);
-%scatterplot(rxSigCoarse);
-%scatterplot(rxSigFine);
-%scatterplot(rxSigSync);
+scatterplot(rxSigFiltered);
+scatterplot(rxSigCoarse);
+scatterplot(rxSigSync);
 scatterplot(rxSigFrame);
 scatterplot(rxSigPhase);
+scatterplot(rxSigFine);
 %eyediagram(rxSigPhase,3);
 
 %fft
