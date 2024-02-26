@@ -42,15 +42,17 @@ rxSigSync = symbolSync(rxSigCoarse);
 scatterplot(rxSigFiltered);
 scatterplot(rxSigCoarse);
 scatterplot(rxSigSync);
+
 %----------------------------FRAME SYNC-----------------------------------
 % PSK modulate barkerSequence used in transmission
 barkerSymbols = pskmod(barkerSequence, M, pi/M, 'gray');
-detector = comm.PreambleDetector(barkerSymbols.', 'Threshold', 12);
+detector = comm.PreambleDetector(barkerSymbols.', 'Threshold', 15);
 idx = detector(rxSigSync)
 dataStartIdx = idx+1;
-rxSigFrame = rxSigSync(dataStartIdx:end);
+rxSigFrame = rxSigSync(dataStartIdx:dataStartIdx+dataLength);
 
 scatterplot(rxSigFrame);
+
 % Estimate phase offset --------------------------------------------------
 % Don't use first sample as it is centered by the timing synchronizer?
 receivedPilotSymbols = rxSigSync(dataStartIdx-length(barkerSymbols)+1:dataStartIdx-1);
@@ -66,14 +68,12 @@ rxSigPhase = rxSigFrame * exp(-1i * estPhaseShift);
 
 
 
-
-
 % Fine frequency sync and FINE phase sync, does not work if phase offset is
 % outside of quadrant.
 fineSync = comm.CarrierSynchronizer( ...
     'DampingFactor',0.7, ...
     'NormalizedLoopBandwidth',0.01, ...
-    'SamplesPerSymbol',sps, ...
+    'SamplesPerSymbol',sps, ...  &Mulig denne må bli satt til 1 avhengig av plasseringen til symbolSynch
     'Modulation','QPSK');
 rxSigFine = fineSync(rxSigPhase);
 
