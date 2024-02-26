@@ -22,7 +22,7 @@ txSignal = tx(dataPacket,numberOfSymbols,rollOffFactor,filterSpan,samplesPerSymb
 
 
 % Channel block
-channelSignal = channel(txSignal,samplingFrequency,samplesPerSymbol);
+channelSignal = channel(txSignal,samplingFrequency);
 
 
 % Rx block

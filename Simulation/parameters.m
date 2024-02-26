@@ -6,16 +6,16 @@
 
 
 % Data
-bits = 1e6;
+bits = 1E4;
 bitsPerSymbol = 2;
 numberOfSymbols = 2^bitsPerSymbol;
 
 
 % Signal
-samplingFrequency = 1e6; 
+samplingFrequency = 61.44E6;    % MSPS from the Adalm-Pluto's datasheet
 
 
 % Root Raised Cosine Filter
 rollOffFactor = 0.5;  
-filterSpan = 10;                          
-samplesPerSymbol = 4;  
+filterSpan = 40;                          
+samplesPerSymbol = 100;  
