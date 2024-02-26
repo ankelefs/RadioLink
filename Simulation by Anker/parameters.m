@@ -6,7 +6,7 @@
 
 
 % Data
-bits = 1000+1;
+bits = 1e6;
 bitsPerSymbol = 2;
 numberOfSymbols = 2^bitsPerSymbol;
 
@@ -17,5 +17,5 @@ samplingFrequency = 1e6;
 
 % Root Raised Cosine Filter
 rollOffFactor = 0.5;  
-filterSpan = 15;                          
+filterSpan = 10;                          
 samplesPerSymbol = 4;  

@@ -31,18 +31,18 @@ channelSignal = channel(txSignal,samplingFrequency,samplesPerSymbol);
 
 % Demodulate received signal
 demodulatedSignal = pskdemod(...
-        rxSignal,...           % <— Changes during testing 
+        rxSignal,...
         numberOfSymbols,...
         pi/numberOfSymbols,...
         "gray",...
         OutputType="bit");
 
 
-% Calculate the number of symbol (QPSK) errors
+% Calculate the number of bit errors
 dataIn = dataPacket;
 dataOut = demodulatedSignal;
 numberOfErrors = symerr(dataIn,dataOut);
-disp("Symbol error rate: " + numberOfErrors/length(dataIn));
+disp("Bit error rate: " + numberOfErrors/length(dataIn)*100 + " %");
 
 
 

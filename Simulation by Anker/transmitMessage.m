@@ -14,4 +14,4 @@ barkerCode = [1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 1, 0, 1]';          % Barker code of
 
 
 % Combined data packet
-dataPacket = [barkerCode; data];                                % Concatenate with random data
+dataPacket = [barkerCode; data; barkerCode];                    % Concatenate with random data

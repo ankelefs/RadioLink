@@ -14,15 +14,14 @@ function [rxSignal, frequencyOffsetEstimate] = rx(channelSignal,rollOffFactor,fi
 
     % Create a root raised cosine filter
     rootRaisedCosineFilter = rcosdesign(rollOffFactor,filterSpan,samplesPerSymbol);   
-    % definedPlot(rootRaisedCosineFilter, 2, "Root Raised Cosine Filter");
+    % definedPlot(rootRaisedCosineFilter, 2, "Root Raised Cosine Filter", 5);
 
 
     % Apply a matched filter (also RRCF) to received signal
     rxSignal_MatchedFiltered = upfirdn(channelSignal,rootRaisedCosineFilter,1,samplesPerSymbol); 
-    rxSignal_MatchedFiltered = rxSignal_MatchedFiltered(samplesPerSymbol*filterSpan+1:end-(filterSpan*samplesPerSymbol-1));
-    definedPlot(rxSignal_MatchedFiltered, 3, "rxSignal MatchedFiltered")
-    % ^ Remove a portion of the signal? —> modulate.m
-    % ^ multiply with samplesPerSymbol if still oversampled? —> modulate.m
+    % Remove the ramp-up and ramp-down of the receive-filter
+    rxSignal_MatchedFiltered = rxSignal_MatchedFiltered(filterSpan+1:end-(filterSpan));
+    definedPlot(rxSignal_MatchedFiltered, 3, "rxSignal MatchedFiltered", 6)
     
 
     % Coarse frequency compensation

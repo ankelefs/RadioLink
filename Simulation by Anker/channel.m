@@ -8,7 +8,7 @@
 function channelSignal = channel(txSignal,samplingFrequency,samplesPerSymbol)
 
     channelSignal = awgn(txSignal,10,"measured");   % AWGN added based relative to measurements of signal
-    definedPlot(channelSignal, 3, "channelSignal");
+    % definedPlot(channelSignal, 3, "channelSignal", 4);
 
 
     % Simulate a frequency offset
@@ -19,7 +19,7 @@ function channelSignal = channel(txSignal,samplingFrequency,samplesPerSymbol)
     
 
     % Simulate a phase shift
-    % phi = 55;                                                   % Phase shift of x degrees
-    % channelSignal = channelSignal*exp(1i*deg2rad(phi));         % Apply phase shift
+    phi = 55;                                                   % Phase shift of x degrees
+    channelSignal = channelSignal*exp(1i*deg2rad(phi));         % Apply phase shift
 
 end
