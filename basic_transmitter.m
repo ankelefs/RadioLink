@@ -4,20 +4,27 @@
 run('params.m');
 
 %Create random qpsk signal
-%Modulate signal M-PSK 
+% Modulate signal M-PSK 
 M = 4;
-% Model speech data as known data
-data = repmat([3, 2, 1], 1, 30);
-%Pilot sequence
-pilotSequence = repmat([1, 1, 1, 3], 1, 4); % Repeat sequence N times
-data = [pilotSequence'; data'];              % Concenate with random data
 
-%scatterplot(txSig);
+% Model speech as random data
+data = randi([0 M-1], 100000, 1);
+
+% Barker Code sequence
+barkerCode = [1, 1, 1, 1, 1, -1, -1, 1, 1, -1, 1, -1, 1]; % Barker code length 13
+barkerCodeMapped = (barkerCode + 1)/2; % Mapping [-1, 1] to [0, 1] for QPSK
+barkerCodeMapped2 = barkerCodeMapped+2;
+barkerSequence = [barkerCodeMapped, barkerCodeMapped2,barkerCodeMapped, barkerCodeMapped2];
+
+packet = [barkerSequence.'; data];         % Concenate with random data
+
+% M-PSK modulate 
+txSig = pskmod(packet, M, pi/M, 'gray'); % input, modulation order, phase offset, symbol order
 
 % RRC Filter parameters
 rolloff = 0.5;  % Roll-off factor
-span = 8;      % Filter span in symbols
-sps = 4;        % Samples per symbol
+span = 12;      % Filter span in symbols
+sps = 8;        % Samples per symbol
 
 % Create RRC Filters
 rrcFilter = rcosdesign(rolloff, span, sps);

@@ -120,12 +120,12 @@ numErrs = symerr(data, rxData)
 % Scatter plots
 %scatterplot(txSig);
 %scatterplot(rxSig);
-scatterplot(rxSigFiltered);
-scatterplot(rxSigCoarse);
-scatterplot(rxSigSync);
-scatterplot(rxSigFrame);
-scatterplot(rxSigPhase);
-scatterplot(rxSigFine);
+%scatterplot(rxSigFiltered);
+%scatterplot(rxSigCoarse);
+%scatterplot(rxSigSync);
+%scatterplot(rxSigFrame);
+%scatterplot(rxSigPhase);
+%scatterplot(rxSigFine);
 %eyediagram(rxSigPhase,3);
 
 %fft
