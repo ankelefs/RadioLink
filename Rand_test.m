@@ -1,12 +1,12 @@
 % Recording 100ms of audio and displaying the data
 
 % Set recording parameters
-Fs = 4000;  % Sample rate (Hz)
-recordDuration = 3;  % Recording duration in seconds (100ms)
+Fs = 10000;  % Sample rate (Hz)
+recordDuration = 5;  % Recording duration in seconds (100ms)
 numChannels = 1;  % Number of audio channels
 
 % Create audiorecorder object with specified parameters
-BitDepth = 8;
+BitDepth = 16;
 recObj = audiorecorder(Fs, BitDepth, numChannels);
 
 fprintf('Audio Recorder Properties:\n');
@@ -20,6 +20,7 @@ recordblocking(recObj, recordDuration);
 
 % Retrieve the recorded audio data
 audioData = getaudiodata(recObj);
+
 %audioData = [-0.4, 0.2, 0.3, 0.4, 1];
 disp(audioData);
 audioDatacon = round((audioData+1)*128);
@@ -73,4 +74,4 @@ ylabel('Amplitude');
 grid on;
 disp('Recording and plotting complete.');
 
-sound(resAudioMat, Fs);
+%sound(resAudioMat, Fs);

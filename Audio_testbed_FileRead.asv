@@ -5,20 +5,20 @@ bitDepth = '16-bit integer'; %For some reason it dose not work with 8-bit
 %but this is handled in the while loop below
 
 
-%deviceReader lets me record audio from my microphone
-audioReader = audioDeviceReader( ...
-    'SampleRate', Fs, ...          % Sample rate in Hz
-    'SamplesPerFrame', frameLength, ...      % Number of samples per frame
-    'BitDepth', bitDepth, ...
-    'Device', 'Primary Sound Capture Driver' ... % Name of the audio input device (optional)
-);
+%Reads from a file
+fileReader = dsp.AudioFileReader( ...
+    'Counting-16-44p1-mono-15secs.wav', ...
+    'SamplesPerFrame',frameLength);
+deviceWriter = audioDeviceWriter( ...
+    'SampleRate',fileReader.SampleRate);
 
 %deviceWriter writes the signal to a file
 fileWriter = dsp.AudioFileWriter(SampleRate= Fs);
 
 HeaderCounter = 0;
 tic
-while toc<5 % In real implementation make this infinit/ end on condition
+toc
+while ~isDone(fileReader) 
     mySignal = audioReader(); %Getting frame data
     mySignal = [round((mySignal+1)*128);HeaderCounter]; %converting frame data to 8-bit ints
     binaryData = dec2bin(mySignal,8); %Converting ints to binary
@@ -61,5 +61,3 @@ release(fileWriter)
 
 %Have not found a way to listen to the recording as it is recorded, but
 %think this will work when we send the data and run it on two machines
-
-
