@@ -1,4 +1,4 @@
-function [rxSigFrame, partialPacket, packetComplete, dataStartIdx] = extractPacket(rxSigSync, barkerSequence, M, dataLength, overlapBuffer, partialPacket)
+function [rxSigFrame, partialPacket, packetComplete, dataStartIdx] = extractPacket(inputSignal, barkerSequence, M, dataLength, overlapBuffer, partialPacket)
 
     rxSigFrame = [];
 
@@ -8,9 +8,9 @@ function [rxSigFrame, partialPacket, packetComplete, dataStartIdx] = extractPack
 
     barkerSymbols = pskmod(barkerSequence, M, pi/M, 'gray');
 
-    detector = comm.PreambleDetector(barkerSymbols.', 'Threshold', 13);
+    detector = comm.PreambleDetector(barkerSymbols.', 'Threshold', 15);
 
-    idx = detector(rxSigSync)
+    idx = detector(inputSignal)
 
     
 
@@ -22,18 +22,18 @@ function [rxSigFrame, partialPacket, packetComplete, dataStartIdx] = extractPack
 
         % Check if the complete packet is within the current buffer
 
-        if (dataStartIdx + dataLength - 1) <= length(rxSigSync)
+        if (dataStartIdx + dataLength - 1) <= length(inputSignal)
 
             % Packet can be fully extracted from the current buffer
 
-            rxSigFrame = rxSigSync(dataStartIdx:dataStartIdx+dataLength);
+            rxSigFrame = inputSignal(dataStartIdx:dataStartIdx+dataLength-1);
             partialPacket = []; % Clear any existing partial packet
             packetComplete = true;
 
         else
 
             % Packet spans into the next buffer, extract what we can and store it
-            partialPacket = rxSigSync(dataStartIdx:end);
+            partialPacket = inputSignal(dataStartIdx:end);
             
             % Indicate packet is not complete
             packetComplete = false;

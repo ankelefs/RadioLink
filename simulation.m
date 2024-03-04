@@ -2,19 +2,15 @@
 
 % Setup parameters
  run('params.m');
-% Setup PlutoSDR System object for receiving
-rx = sdrrx('Pluto');
-rx.CenterFrequency = fc;
-rx.BasebandSampleRate = fs;
-rx.SamplesPerFrame = numSamples;
-rx.OutputDataType = 'double';
+
 
 % Main processing loop
 keepRunning = true; % Control variable to keep the loop running
 i=0;
 while i<1
 
-    rxData = rx();
+    scatterplot(txSig);
+    rxData = simulateChannelEffects(txSigFiltered, 1e6, 30000, 0, deg2rad(110), 0); %input, fs, snr, freqOffset, phaseOffset, distortion
     %scatterplot(rxData);
     
     
@@ -32,7 +28,7 @@ while i<1
     coarseSync = comm.CoarseFrequencyCompensator( ...  
         'Modulation','QPSK', ...
         'FrequencyResolution',1, ...
-        'SampleRate',1e6); %Fs*sps if signal is still oversampled
+        'SampleRate',1e6*sps); %Fs*sps if signal is still oversampled
 
     [rxSigCoarse, freqEstimate] = coarseSync(rxSigFiltered);
 
@@ -59,7 +55,7 @@ while i<1
         'ReferenceTap',1);
     
     % Apply the Decision Feedback Equalizer
-    rxSigEqualized = dfe(rxSigSync,rxSigSync(1:1000));
+    rxSigEqualized = dfe(rxSigSync,rxSigSync(1:100));
 
     scatterplot(rxSigFiltered);
     scatterplot(rxSigCoarse);
@@ -77,12 +73,12 @@ while i<1
         scatterplot(rxSigFrame);
 
         %----------------------------PHASE CORRECTION-------------------
-        [rxSigPhaseCorrected, estPhaseShiftDeg] = estimatePhaseOffset(rxSigFrame, barkerSequence, M);
+        [rxSigPhaseCorrected, estPhaseShiftDeg] = estimatePhaseOffset(rxSigFrame, barkerSequence, M, rxSigSync, dataStartIdx);
         scatterplot(rxSigPhaseCorrected);
 
         % Fine frequency sync and FINE phase sync
-        fineSync = comm.CarrierSynchronizer('DampingFactor', 0.7, 'NormalizedLoopBandwidth', 0.01, 'SamplesPerSymbol', sps, 'Modulation', 'QPSK');
-        rxSigFine = fineSync(rxSigFrame);
+        fineSync = comm.CarrierSynchronizer('DampingFactor', 0.7, 'NormalizedLoopBandwidth', 0.01, 'SamplesPerSymbol', 1, 'Modulation', 'QPSK');
+        rxSigFine = fineSync(rxSigPhaseCorrected);
         scatterplot(rxSigFine);
         % Demodulate
         rxDataDemod = pskdemod(rxSigFine, M, pi/M, 'gray');
@@ -98,9 +94,5 @@ while i<1
 end
 
 
-% Spectrum analyze
-%spectrumAnalyze(rx);
-%release(spectrumAnalyzerObj);
-% Release the System objects
-release(rx);
+
 
