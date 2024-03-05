@@ -27,8 +27,8 @@ sps = 8;        % Samples per symbol
 rrcFilter = rcosdesign(rolloff, span, sps);
 
 % Model speech as random data
-data = randi([0 M-1], 1000, 1);
-%load('data_known.mat')
+%data = randi([0 M-1], 1000, 1);
+load('data_known.mat')
 
 
 packet = [barkerSequence.'; data];         % Concenate with random data
