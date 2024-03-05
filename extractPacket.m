@@ -10,7 +10,7 @@ function [rxSigFrame, partialPacket, packetComplete, dataStartIdx] = extractPack
 
     detector = comm.PreambleDetector(barkerSymbols.', 'Threshold', 15);
 
-    idx = detector(inputSignal)
+    idx = detector(inputSignal);
 
     
 

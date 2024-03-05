@@ -39,11 +39,11 @@
 keepRunning = true; % Control variable to keep the loop running
 i=0;
 while i<1
-    
+   
     %scatterplot(txSig);
     rxData = simulateChannelEffects(txSigFiltered, 1e6, 30000, 0, deg2rad(110), 0); %input, fs, snr, freqOffset, phaseOffset, distortion
     %scatterplot(rxData);
-    tic
+    
     % Concatenate overlapBuffer with the current samples (rxData)
     currentBuffer = [overlapBuffer; rxData];
 
@@ -56,7 +56,7 @@ while i<1
     
     % Frequency compensation -------------------------------------------
     [rxSigCoarse, freqEstimate] = coarseSync(rxSigFiltered);
-    
+    toc
     % Correct timing errors, downsamples by sps
     rxSigSync = symbolSync(rxSigCoarse);
     
@@ -87,8 +87,7 @@ while i<1
         % Demodulate
         rxDataDemod = pskdemod(rxSigFine, M, pi/M, 'gray');
         
-        numErrs = symerr(data, rxDataDemod)
-        toc
+        numErrs = symerr(data, rxDataDemod);
         
     else
         disp('Incomplete packet received. Waiting for the rest...');

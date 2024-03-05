@@ -5,14 +5,13 @@ function [rxSigPhaseCorrected, estPhaseShiftDeg] = estimatePhaseOffset(rxSigFram
     expectedPilotSymbols = pskmod(barkerSequence(1:end), M, pi/M, 'gray');
     
     % Assuming the first 'n' samples in rxSigFrame are pilot symbols
-    numPilotSymbols = length(expectedPilotSymbols)
+    numPilotSymbols = length(expectedPilotSymbols);
     receivedPilotSymbols = rxSigSync(dataStartIdx-numPilotSymbols:dataStartIdx-1);
-    length(receivedPilotSymbols)
     % Calculate complex phase differences
-    complexDiffs = receivedPilotSymbols .* conj(expectedPilotSymbols.')
+    complexDiffs = receivedPilotSymbols .* conj(expectedPilotSymbols.');
     
     % Average the complex representations of the phase differences
-    meanComplexDiff = mean(complexDiffs)
+    meanComplexDiff = mean(complexDiffs);
     
     % Calculate the angle of the mean complex difference for the phase estimate
     estPhaseShift = angle(meanComplexDiff);

@@ -27,8 +27,8 @@ sps = 8;        % Samples per symbol
 rrcFilter = rcosdesign(rolloff, span, sps);
 
 % Model speech as random data
-%data = randi([0 M-1], 1000, 1);
-load('data_known.mat')
+data = randi([0 M-1], 1000, 1);
+%load('data_known.mat')
 
 
 packet = [barkerSequence.'; data];         % Concenate with random data
@@ -41,7 +41,7 @@ txSig = pskmod(packet, M, pi/M, 'gray'); % input, modulation order, phase offset
 txSigFiltered = upfirdn(txSig, rrcFilter, sps);
 
 
-dataLength = 1000;
+dataLength = length(data);
 numSamples = 2*dataLength*sps; % Number of samples per frame (MUST BE AT LEAST 2 x PACKET LENGTH)
 % Assuming numSamples is defined in 'params.m'
 overlapSize = 512; % Define overlap size based on your preamble length and expected signal characteristics
