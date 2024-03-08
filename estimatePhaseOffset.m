@@ -6,7 +6,19 @@ function [rxSigPhaseCorrected, estPhaseShiftDeg] = estimatePhaseOffset(rxSigFram
     
     % Assuming the first 'n' samples in rxSigFrame are pilot symbols
     numPilotSymbols = length(expectedPilotSymbols);
-    receivedPilotSymbols = rxSigSync(dataStartIdx-numPilotSymbols:dataStartIdx-1);
+    if dataStartIdx <= numPilotSymbols
+        % Calculate the offset into the expectedPilotSymbols based on dataStartIdx
+        offset = numPilotSymbols - dataStartIdx +2;
+        % Adjust the expectedPilotSymbols to start from the offset that aligns with the buffer start
+        expectedPilotSymbols = expectedPilotSymbols(offset:end);
+        % The received pilot symbols will be from the start of the buffer up to dataStartIdx
+        receivedPilotSymbols = rxSigSync(1:dataStartIdx-1);
+    else
+        
+        receivedPilotSymbols = rxSigSync(dataStartIdx-numPilotSymbols:dataStartIdx-1);
+    end
+    
+    %receivedPilotSymbols = rxSigSync(dataStartIdx-numPilotSymbols:dataStartIdx-1);
     % Calculate complex phase differences
     complexDiffs = receivedPilotSymbols .* conj(expectedPilotSymbols.');
     

@@ -23,7 +23,6 @@ function [rxSigFrame, partialPacket, packetComplete, dataStartIdx] = extractPack
         % Check if the complete packet is within the current buffer
 
         if (dataStartIdx + dataLength - 1) <= length(inputSignal)
-
             % Packet can be fully extracted from the current buffer
 
             rxSigFrame = inputSignal(dataStartIdx:dataStartIdx+dataLength-1);

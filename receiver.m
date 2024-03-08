@@ -10,6 +10,8 @@ rx.SamplesPerFrame = numSamples;
 rx.OutputDataType = 'double';
 
 %Define objects
+  
+    
     % Frequency compensation -------------------------------------------
     coarseSync = comm.CoarseFrequencyCompensator( ...  
         'Modulation','QPSK', ...
@@ -46,9 +48,11 @@ rx.OutputDataType = 'double';
 % Main processing loop
 keepRunning = true; % Control variable to keep the loop running
 i=0;
-while i<1
-
+numErrs = 0;
+while i<10
+    
     rxData = rx();
+    
     %scatterplot(rxData);
     
     
@@ -59,9 +63,7 @@ while i<1
     rxSigFiltered = upfirdn(currentBuffer, rrcFilter,1,1);
     %doFFT(rxSigFiltered, M, Fs);
     rxSigFiltered = rxSigFiltered(sps*span+1:end-(span*sps-1)); %Multiply with sps if signal still oversampled
-
-
-
+    
     % Frequency compensation -------------------------------------------
     [rxSigCoarse, freqEstimate] = coarseSync(rxSigFiltered);
 
@@ -75,31 +77,35 @@ while i<1
     % Apply the Decision Feedback Equalizer
     %rxSigEqualized = dfe(rxSigSync,rxSigSync(1:1000));
 
-    scatterplot(rxSigFiltered);
-    scatterplot(rxSigCoarse);
-    scatterplot(rxSigSync);
+    %scatterplot(rxSigFiltered);
+    %scatterplot(rxSigCoarse);
+    %scatterplot(rxSigSync);
     %scatterplot(rxSigEqualized);
     
 
     %----------------------------FRAME SYNC----------------------------------
     [rxSigFrame, partialPacket, packetComplete,dataStartIdx] = extractPacket(rxSigSync, barkerSequence, M, dataLength, overlapBuffer, partialPacket);
-    packetComplete
+    %packetComplete;
     %scatterplot(rxSigFrame);
     
     if packetComplete
         % Only proceed with phase correction and further processing if a complete packet was extracted
-        scatterplot(rxSigFrame);
+        %scatterplot(rxSigFrame);
 
         %----------------------------PHASE CORRECTION-------------------
          [rxSigPhaseCorrected, estPhaseShiftDeg] = estimatePhaseOffset(rxSigFrame, barkerSequence, M, rxSigSync, dataStartIdx);
-        scatterplot(rxSigPhaseCorrected);
+        %scatterplot(rxSigPhaseCorrected);
 
         % Fine frequency sync and FINE phase sync
         rxSigFine = fineSync(rxSigPhaseCorrected);
-        scatterplot(rxSigFine);
+        
         % Demodulate
         rxDataDemod = pskdemod(rxSigFine, M, pi/M, 'gray');
-        numErrs = symerr(data, rxDataDemod)
+        numErrs = numErrs + symerr(data, rxDataDemod);
+        if i == 9
+            disp(numErrs);
+        end
+        
         
     else
         disp('Incomplete packet received. Waiting for the rest...');
@@ -108,6 +114,7 @@ while i<1
     % Update overlapBuffer with the last part of rxData for the next iteration
     overlapBuffer = rxData(end-overlapSize+1:end);
     i=i+1;
+    
 end
 
 
