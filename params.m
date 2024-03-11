@@ -44,7 +44,7 @@ txSigFiltered = upfirdn(txSig, rrcFilter, sps);
 dataLength = length(data);
 numSamples = 2*dataLength*sps; % Number of samples per frame (MUST BE AT LEAST 2 x PACKET LENGTH)
 % Assuming numSamples is defined in 'params.m'
-overlapSize = dataLength*sps; % Define overlap size based on your preamble length and expected signal characteristics
+overlapSize = 256; % Define overlap size based on your preamble length and expected signal characteristics
 overlapBuffer = zeros(overlapSize, 1); % Buffer to store the last part of the previous buffer for overlap
 partialPacket = []; % Initialization is crucial before its first use
 

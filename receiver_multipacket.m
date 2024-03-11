@@ -49,7 +49,7 @@ rx.OutputDataType = 'double';
 keepRunning = true; % Control variable to keep the loop running
 i=0;
 numErrs = 0;
-while i<100
+while i<10
     
     rxData = rx();
     
@@ -76,7 +76,7 @@ while i<100
     % Initialize Decision Feedback Equalizer (DFE) 
     % Apply the Decision Feedback Equalizer
     %rxSigEqualized = dfe(rxSigSync,rxSigSync(1:1000));
-    %plot(rxSigFiltered);
+
     %scatterplot(rxSigFiltered);
     %scatterplot(rxSigCoarse);
     %scatterplot(rxSigSync);
@@ -84,37 +84,44 @@ while i<100
     
 
     %----------------------------FRAME SYNC----------------------------------
-    [rxSigFrame, partialPacket, packetComplete,dataStartIdx] = extractPacket(rxSigSync, barkerSequence, M, dataLength, overlapBuffer, partialPacket);
+    [rxSigFrames, partialPacket, packetCompletes,dataStartIdxs] = extractPackets(rxSigSync, barkerSequence, M, dataLength, overlapBuffer, partialPacket);
     %packetComplete;
     %scatterplot(rxSigFrame);
     
-    if packetComplete
-        % Only proceed with phase correction and further processing if a complete packet was extracted
-        %scatterplot(rxSigFrame);
+    % Iterate through each extracted packet
+    for packetIdx = 1:length(rxSigFrames)
+        rxSigFrame = rxSigFrames{packetIdx}; % Extracted packet
+        packetComplete = packetCompletes(packetIdx); % Completion status of the packet
+        dataStartIdx = dataStartIdxs(packetIdx); % Starting index of the packet
 
-        %----------------------------PHASE CORRECTION-------------------
-         [rxSigPhaseCorrected, estPhaseShiftDeg] = estimatePhaseOffset(rxSigFrame, barkerSequence, M, rxSigSync, dataStartIdx);
-        %scatterplot(rxSigPhaseCorrected);
+        if packetComplete
+            % Only proceed with phase correction and further processing if a complete packet was extracted
 
-        % Fine frequency sync and FINE phase sync
-        rxSigFine = fineSync(rxSigPhaseCorrected);
-        
-        % Demodulate
-        rxDataDemod = pskdemod(rxSigFine, M, pi/M, 'gray');
-        numErrs = numErrs + symerr(data, rxDataDemod);
-        if i == 99
-            disp(numErrs);
+            %----------------------------PHASE CORRECTION-------------------
+            [rxSigPhaseCorrected, estPhaseShiftDeg] = estimatePhaseOffset(rxSigFrame, barkerSequence, M, rxSigSync, dataStartIdx);
+            % Fine frequency sync and FINE phase sync
+            rxSigFine = fineSync(rxSigPhaseCorrected);
+
+            % Demodulate
+            rxDataDemod = pskdemod(rxSigFine, M, pi/M, 'gray');
+
+            % Assuming 'data' is the originally transmitted data you're comparing against, and 'numErrs' is initialized earlier
+            numErrs = numErrs + symerr(data, rxDataDemod);
+
+            if packetIdx == length(rxSigFrames) % Check if it's the last packet for this iteration
+                disp(['Number of errors for the last packet: ', num2str(numErrs)]);
+            end
+
+        else
+            disp('Incomplete packet received. Waiting for the rest...');
         end
-        
-        
-    else
-        disp('Incomplete packet received. Waiting for the rest...');
     end
 
+    % Assuming 'rxData' is the raw data buffer you're processing
     % Update overlapBuffer with the last part of rxData for the next iteration
+    % Ensure 'overlapSize' is defined and initialized correctly
     overlapBuffer = rxData(end-overlapSize+1:end);
-    i=i+1;
-    
+
 end
 
 
