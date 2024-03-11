@@ -12,7 +12,6 @@ addpath('/');
 % Parameters
 bits = 1E2;
 samplingFrequency = 61.44E6;                % MSPS from the Adalm-Pluto's datasheet
-carrierFrequency = 1.7975E9;                % 1.7975 GHz carrier frequency
 bitsPerSymbol = 2;
 numberOfSymbols = 2^bitsPerSymbol;
 rollOffFactor = 0.5;  
@@ -21,9 +20,7 @@ samplesPerSymbol = 8;
 
 
 %********************************
-plotOptionTx = 1;
-plotOptionChannel = 1;
-plotOptionRx = 1;
+plotOption = 1;
 %********************************
 
 
@@ -38,8 +35,8 @@ dataPacket = [barkerCode; barkerCode; data];
 
 
 % Radio link simulation
-txSignal = tx(dataPacket, numberOfSymbols, rollOffFactor, filterSpan, samplesPerSymbol, samplingFrequency, carrierFrequency, plotOptionTx);
-channelSignal = channel(txSignal, samplingFrequency, carrierFrequency, plotOptionChannel);                                                                   
+txSignal = tx(dataPacket, numberOfSymbols, rollOffFactor, filterSpan, samplesPerSymbol, plotOption);
+channelSignal = channel(txSignal, samplingFrequency, plotOption);                                                                   
 % [rxSignal, frequencyOffsetEstimate] = rx(...
     % channelSignal, ... 
     % rollOffFactor, ... 
@@ -47,8 +44,7 @@ channelSignal = channel(txSignal, samplingFrequency, carrierFrequency, plotOptio
     % samplesPerSymbol, ...
     % samplingFrequency, ...
     % barkerCode, ...
-    % carrierFrequency, ...
-    % plotOptionRx);
+    % plotOption);
 
 
 % Demodulate received signal

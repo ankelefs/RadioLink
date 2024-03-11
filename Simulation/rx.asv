@@ -6,10 +6,10 @@
 %*************************************************************************
 
 
-function [rxSignal, frequencyOffsetEstimate] = rx(channelSignal, rollOffFactor, filterSpan, samplesPerSymbol, samplingFrequency, barkerCode, carrierFrequency, plotOption)
+function [rxSignal, frequencyOffsetEstimate] = rx(channelSignal, rollOffFactor, filterSpan, samplesPerSymbol, samplingFrequency, plotOption)
 
     % Parameters
-    % (?) Where do the values come from, except the example code? Magic numbers
+    % Where do the values come from, except the example code?
     desiredPower = 2;
     averagingLength = 50;
     maxPowerGain = 20;
@@ -19,8 +19,10 @@ function [rxSignal, frequencyOffsetEstimate] = rx(channelSignal, rollOffFactor, 
     timingErrorDetectorGain = 5.4;
     phaseRecoveryLoopBandwidth = 0.01;
     phaseRecoveryDampingFactor = 1;
+    frameSize = 1133;
     preambleDetectionThreshold = 8;
     
+
 
 
 
@@ -58,17 +60,17 @@ function [rxSignal, frequencyOffsetEstimate] = rx(channelSignal, rollOffFactor, 
     coarseFrequencyEstimator_object = comm.CoarseFrequencyCompensator( ...  
         'Modulation',           'QPSK', ...
         'Algorithm',            'Correlation-based', ...
-        'SampleRate',           samplingFrequency*samplesPerSymbol);
+        'SampleRate'            samplingFrequency*samplesPerSymbol);
     
     [~, coarseFrequencyOffsetEstimate] = coarseFrequencyEstimator_object(rxSignal_matchedFiltered);
 
             
     coarseFrequencyCompensator_object = comm.PhaseFrequencyOffset( ...
-        'PhaseOffset',              0, ...                                      % (?) Why is PhaseOffset 0?
+        'PhaseOffset',              0, ...                                                  % (?) Why is PhaseOffset 0?
         'FrequencyOffsetSource',    'Input port', ...
         'SampleRate',               samplingFrequency*samplesPerSymbol);
 
-    rxSignal_coarseFrequencyCompensated = coarseFrequencyCompensator_object(rxSignal_matchedFiltered, coarseFrequencyOffsetEstimate);
+    rxSignal_coarseFrequencyCompensated = coarseFrequencyCompensator_object(rxSignal_matchedFiltered, -coarseFrequencyOffsetEstimate);
 
 
 
@@ -106,18 +108,12 @@ function [rxSignal, frequencyOffsetEstimate] = rx(channelSignal, rollOffFactor, 
     %********************************
     % Frame Synchronizer
     %********************************
-    preambleDetection_object = comm.PreambleDetector( ...
+    frameSynchronization_object = FrameSynchronizer( ...
         'Preamble',                 barkerCode, ...
-        'DetectionMetricOutput',    true, ...
-        'Detections',               'All', ...   
-        'Input',                    'Symbol', ...                       % (?) Should this be incorporated as bits instead?
-        'Threshold',                preambleDetectionThreshold);
+        'Threshold',                preambleDetectionThreshold, ...
+        'OutputLength',             frameSize);
 
-    rxSignal_frameSynchronized = preambleDetection_object(rxSignal_fineFrequencyCompensated);
-
-
-    rxSignal = rxSignal_frameSynchronized;
-    frequencyOffsetEstimate = coarseFrequencyOffsetEstimate;
+    rxSignal_frameSynchronized = frameSynchronization_object(rxSignal_fineFrequencyCompensated);
 
 
 
@@ -153,6 +149,6 @@ function [rxSignal, frequencyOffsetEstimate] = rx(channelSignal, rollOffFactor, 
     %
     %
     % QPSKDataDecoder 
-    % Can be used if general demodulator does not work well
+    % Can be used if general demodulator does not work 
 
 end

@@ -5,36 +5,80 @@
 %*************************************************************************
 
 
-function txSignal = tx(data,numberOfSymbols,rollOffFactor,filterSpan,samplesPerSymbol)
+function txSignal = tx(data, numberOfSymbols, rollOffFactor, filterSpan, samplesPerSymbol, samplingFrequency, carrierFrequency, plotOption)
 
     addpath('/');
 
     
     % Modulate data using QPSK and grey-coding
-    txSignal_Modulated = pskmod(...
-        data,...
-        numberOfSymbols,...
-        pi/numberOfSymbols,...
-        "gray",...
-        "InputType","bit",...
-        "OutputDataType","double");    
-    % definedPlot(txSignal_Modulated, 3, "txSignal Modulated");
-    % disp("txSignal_Modulated");
-    % disp(txSignal_Modulated);
-    
+    txSignal_modulated = pskmod( ...
+        data, ...
+        numberOfSymbols, ...
+        pi/numberOfSymbols, ...
+        "gray", ...
+        "InputType",                "bit", ...
+        "OutputDataType",           "double");    
 
     % Create a root raised cosine filter
-    rootRaisedCosineFilter = rcosdesign(rollOffFactor,filterSpan,samplesPerSymbol);   
-    % definedPlot(rootRaisedCosineFilter, 1, "Root Raised Cosine Filter");
-    
+    rootRaisedCosineFilter = rcosdesign(rollOffFactor, filterSpan, samplesPerSymbol);   
 
     % Apply filter and upsample by samplesPerSymbol
-    txSignal_Filtered = upfirdn(txSignal_Modulated,rootRaisedCosineFilter,samplesPerSymbol);    
-    % definedPlot(txSignal_Filtered, 1, "txSignal Filtered");
-    % disp("txSignal_Filtered");
-    % disp(txSignal_Filtered);
+    txSignal_filtered = upfirdn(txSignal_modulated, rootRaisedCosineFilter, samplesPerSymbol);    
 
+    txSignal = txSignal_filtered;
 
-    txSignal = txSignal_Filtered;
+    t = (0:length(txSignal)-1)'/samplingFrequency; 
+    txSignal_realPassband = real(txSignal.*exp(-1i*2*pi*carrierFrequency*t));
+    
+
+    if(plotOption)
+        
+        figure(1);
+        txPlots = tiledlayout(6,1);
+        title(txPlots, "Tx Block");
+
+        % Plot data
+        dataPlot = nexttile;
+        stem(dataPlot, data(1:30));
+        title(dataPlot, "Raw Bit Data");
+        ylim([-0.15 1.15]);
+
+        % Plot modulated data
+        dataPlotModulated = nexttile;
+        stem(dataPlotModulated, real(txSignal_modulated(1:30)));
+        hold on;
+        stem(dataPlotModulated, imag(txSignal_modulated(1:30)));
+        hold off;
+        title(dataPlotModulated, "Modulated Data");
+        ylim([-1.15 1.15]);
+        
+        % Plot pulse waveform
+        pulseWaveform = nexttile;
+        stem(pulseWaveform, rootRaisedCosineFilter);
+        title(pulseWaveform, "Root Raised Cosine Filter Waveform with " + samplesPerSymbol + " Samples Per Symbol and " + filterSpan + " Filter Span");
+        ylim([-0.1 0.5]);
+
+        % Plot real and imaginary waveforms
+        waveformPlot = nexttile;
+        plot(waveformPlot, real(txSignal_filtered));
+        hold on;
+        plot(waveformPlot, imag(txSignal_filtered));
+        hold off;
+        title(waveformPlot, "Real and Imaginary Components of Tx Signal");
+
+        % Plot total waveform
+        waveformPlot = nexttile;
+        plot(waveformPlot, real(txSignal));
+        title(waveformPlot, "Tx Signal (real component, baseband)");
+
+        % Plot real waveform
+        waveformRealPlot = nexttile;
+        plot(waveformRealPlot, txSignal_realPassband);
+        title(waveformRealPlot, "Tx Signal (passband signal with carrier frequency " + {carrierFrequency} + " Hz)");
+
+        % Plot constellation
+        % scatterplot(txSignal_modulated);
+
+    end
 
 end
