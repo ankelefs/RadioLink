@@ -16,7 +16,7 @@ rx.OutputDataType = 'double';
     coarseSync = comm.CoarseFrequencyCompensator( ...  
         'Modulation','QPSK', ...
         'FrequencyResolution',100, ...
-        'SampleRate',1e6); %Fs*sps if signal is still oversampled
+        'SampleRate',fs); %Fs*sps if signal is still oversampled
    
    % Symbol Synchronizer (Timing) --------------------------------------------
     symbolSync = comm.SymbolSynchronizer(...
@@ -84,21 +84,22 @@ while i<10
     
 
     %----------------------------FRAME SYNC----------------------------------
-    [rxSigFrames, partialPacket, packetCompletes,dataStartIdxs] = extractPackets(rxSigSync, barkerSequence, M, dataLength, overlapBuffer, partialPacket);
+    [rxSigFrames, partialPacket, partialBarker, packetCompletes,dataStartIdxs] = extractPackets(rxSigSync, barkerSequence, M, dataLength, overlapBuffer, partialPacket);
     %packetComplete;
     %scatterplot(rxSigFrame);
     
     % Iterate through each extracted packet
-    for packetIdx = 1:length(rxSigFrames)
+    for packetIdx = 1:length(rxSigFrames) 
         rxSigFrame = rxSigFrames{packetIdx}; % Extracted packet
         packetComplete = packetCompletes(packetIdx); % Completion status of the packet
-        dataStartIdx = dataStartIdxs(packetIdx); % Starting index of the packet
-
+        dataStartIdx = dataStartIdxs(packetIdx); % Starting index of the packet 
+        % PROBLEM: PARTIALPACKET HAR JO IKKE IDX, SAA KAN IKKE ITERERE GJENNOM RXSIGFRAMES
+ 
         if packetComplete
             % Only proceed with phase correction and further processing if a complete packet was extracted
 
             %----------------------------PHASE CORRECTION-------------------
-            [rxSigPhaseCorrected, estPhaseShiftDeg] = estimatePhaseOffset(rxSigFrame, barkerSequence, M, rxSigSync, dataStartIdx);
+            [rxSigPhaseCorrected, estPhaseShiftDeg] = estimatePhaseOffset(rxSigFrame, barkerSequence, M, rxSigSync, dataStartIdx, partialBarker);
             % Fine frequency sync and FINE phase sync
             rxSigFine = fineSync(rxSigPhaseCorrected);
 

@@ -13,8 +13,8 @@ function [rxSigPhaseCorrected, estPhaseShiftDeg] = estimatePhaseOffset(rxSigFram
         expectedPilotSymbols = expectedPilotSymbols(offset:end);
         % The received pilot symbols will be from the start of the buffer up to dataStartIdx
         receivedPilotSymbols = rxSigSync(1:dataStartIdx-1);
-    elseif dataStartIdx == 1
-            receivedPilotSymbols = partialBarker;
+    else if dataStartIdx == 1
+            
     else
         
         receivedPilotSymbols = rxSigSync(dataStartIdx-numPilotSymbols:dataStartIdx-1);

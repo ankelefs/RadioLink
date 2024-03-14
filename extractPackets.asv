@@ -1,9 +1,8 @@
-function [rxSigFrames, partialPacket, partialBarker, packetCompletes, dataStartIdxs] = extractPackets(inputSignal, barkerSequence, M, dataLength, overlapBuffer, partialPacket)
+function [rxSigFrames, partialPacket, packetCompletes, dataStartIdxs] = extractPackets(inputSignal, barkerSequence, M, dataLength, overlapBuffer, partialPacket)
 
     rxSigFrames = {};
     packetCompletes = [];
     dataStartIdxs = [];
-    partialBarker = [];
     overlapBufferLength = length(overlapBuffer)-1;
     barkerLen = 26;
 
@@ -17,7 +16,7 @@ function [rxSigFrames, partialPacket, partialBarker, packetCompletes, dataStartI
             rxSigFrames{end+1} = rxSigFrame; % Store the completed packet
             partialPacket = []; % Clear the partialPacket as it's now been used
             packetCompletes(end+1) = true;
-            dataStartIdxs(end+1) = 1;
+            dataStartIdxs(end+1) = 26;
     end
 
     % PSK modulate barkerSequence used in transmission
@@ -45,7 +44,7 @@ function [rxSigFrames, partialPacket, partialBarker, packetCompletes, dataStartI
             dataStartIdxs(end+1) = dataStartIdx;
         else
             % Packet spans into the next buffer, store the partial part
-            partialPacket = inputSignal(dataStartIdx:end);
+            partialPacket = inputSignal(dataStartIdx-26:end);
             break; % Assume only one packet can span buffers at a time
         end
     end
