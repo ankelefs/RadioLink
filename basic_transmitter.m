@@ -12,6 +12,8 @@ tx.BasebandSampleRate = fs;
 tx.Gain = 0; 
 
 
+
+
 % Transmit the signal
 disp('Starting transmission...');
 transmitRepeat(tx, txSigFiltered); % Continuously transmit the signal

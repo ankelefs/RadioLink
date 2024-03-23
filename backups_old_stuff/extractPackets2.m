@@ -1,22 +1,23 @@
-function [rxSigFrames, partialPacket, packetCompletes, dataStartIdxs] = extractPackets(inputSignal, barkerSequence, M, dataLength, overlapBuffer, partialPacket)
+function [rxSigFrames, partialPacket, packetCompletes, packetStartIdxs] = extractPackets2(inputSignal, barkerSequence, M, dataLength, overlapBuffer, partialPacket)
 
     rxSigFrames = {};
     packetCompletes = [];
-    dataStartIdxs = [];
+    packetStartIdxs = [];
     overlapBufferLength = length(overlapBuffer)-1;
     barkerLen = 26;
+    packetLen = dataLength + barkerLen;
 
     % Check and complete any existing partialPacket first
    if ~isempty(partialPacket)
 
             % How much more of the packet we are expecting.
-            neededLength = dataLength - length(partialPacket) + overlapBufferLength - 1;
+            neededLength = packetLen - length(partialPacket) + overlapBufferLength - 1;
             % Directly complete the packet with the beginning of inputSignal, since
             rxSigFrame = [partialPacket; inputSignal(overlapBufferLength:neededLength)];
             rxSigFrames{end+1} = rxSigFrame; % Store the completed packet
             partialPacket = []; % Clear the partialPacket as it's now been used
             packetCompletes(end+1) = true;
-            dataStartIdxs(end+1) = 26;
+            packetStartIdxs(end+1) = 1; % Packet will start at idx 1
     end
 
     % PSK modulate barkerSequence used in transmission
@@ -26,25 +27,26 @@ function [rxSigFrames, partialPacket, packetCompletes, dataStartIdxs] = extractP
     % Detect new packets in the remaining inputSignal
     idx = detector(inputSignal);
     
-    lastDataStartIdx = 0; % Track start index of last detected packet.
+    lastPacketStartIdx = 0; % Track start index of last detected packet.
 
     for i = 1:length(idx)
-        dataStartIdx = idx(i) + 1;
+        packetStartIdx = idx(i) + 1 - barkerLen;
 
-        if (dataStartIdx - lastDataStartIdx) < 50
+        if (packetStartIdx - lastPacketStartIdx) < 50
             continue; % Skip the preamble if it is too close to a different one
         end
 
-        if (dataStartIdx + dataLength - 1) <= length(inputSignal)
+        if (packetStartIdx + packetLen - 1 ) <= length(inputSignal)
             % Packet can be fully extracted from the current buffer
-            lastDataStartIdx = dataStartIdx;
-            rxSigFrame = inputSignal(dataStartIdx:dataStartIdx + dataLength -1);
+            lastPacketStartIdx = packetStartIdx;
+            rxSigFrame = inputSignal(packetStartIdx:packetStartIdx + packetLen-1);
             rxSigFrames{end+1} = rxSigFrame;
             packetCompletes(end+1) = true;
-            dataStartIdxs(end+1) = dataStartIdx;
+            packetStartIdxs(end+1) = packetStartIdx;
         else
             % Packet spans into the next buffer, store the partial part
-            partialPacket = inputSignal(dataStartIdx-26:end);
+            % For a partial packet we also include the barkersequence so we can estimate the phase
+            partialPacket = inputSignal(packetStartIdx:end); 
             break; % Assume only one packet can span buffers at a time
         end
     end

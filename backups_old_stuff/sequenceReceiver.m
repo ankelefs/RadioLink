@@ -49,8 +49,7 @@ rx.OutputDataType = 'double';
 keepRunning = true; % Control variable to keep the loop running
 i=0;
 numErrs = 0;
-allDemodulatedPackets = [];
-while i<10
+while i<100
     
     rxData = rx();
     
@@ -85,7 +84,7 @@ while i<10
     
 
     %----------------------------FRAME SYNC----------------------------------
-    [rxSigFrames, partialPacket, packetCompletes,dataStartIdxs] = extractPackets(rxSigSync, barkerSequence, M, dataLength, overlapBuffer, partialPacket);
+    [rxSigFrames, partialPacket, packetCompletes,packetStartIdxs] = extractPackets2(rxSigSync, barkerSequence, M, dataLength, overlapBuffer, partialPacket);
     %packetComplete;
     %scatterplot(rxSigFrame);
     
@@ -93,14 +92,14 @@ while i<10
     for packetIdx = 1:length(rxSigFrames) 
         rxSigFrame = rxSigFrames{packetIdx}; % Extracted packet
         packetComplete = packetCompletes(packetIdx); % Completion status of the packet
-        dataStartIdx = dataStartIdxs(packetIdx); % Starting index of the packet 
+        packetStartIdx = packetStartIdxs(packetIdx); % Starting index of the packet 
         % PROBLEM: PARTIALPACKET HAR JO IKKE IDX, SAA KAN IKKE ITERERE GJENNOM RXSIGFRAMES
  
         if packetComplete
             % Only proceed with phase correction and further processing if a complete packet was extracted
 
             %----------------------------PHASE CORRECTION-------------------
-            [rxSigPhaseCorrected, estPhaseShift, estPhaseShiftDeg] = estimatePhaseOffset(rxSigFrame, barkerSequence, M, rxSigSync, dataStartIdx);
+            [rxSigPhaseCorrected, estPhaseShiftDeg] = estimatePhaseOffset2(rxSigFrame, barkerSequence, M, packetStartIdx);
             % Fine frequency sync and FINE phase sync
             rxSigFine = fineSync(rxSigPhaseCorrected);
 
@@ -108,16 +107,15 @@ while i<10
             rxDataDemod = pskdemod(rxSigFine, M, pi/M, 'gray');
 
             % Assuming 'data' is the originally transmitted data you're comparing against, and 'numErrs' is initialized earlier
-            numErrs =  symerr(data, rxDataDemod)
-            allDemodulatedPackets = [allDemodulatedPackets; rxDataDemod];
+            numErrs = symerr(data, rxDataDemod)
         end
+        i = i+1;
     end
 
     % Assuming 'rxData' is the raw data buffer you're processing
     % Update overlapBuffer with the last part of rxData for the next iteration
     % Ensure 'overlapSize' is defined and initialized correctly
     overlapBuffer = rxData(end-overlapSize+1:end);
-    i = i+1;
 
 end
 

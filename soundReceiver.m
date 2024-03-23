@@ -1,7 +1,7 @@
-% Real-time Spectrum Analysis using ADALM-PLUTO
 
 % Setup parameters
- run('params.m');
+run('soundParams.m');
+load('fasit.mat')
 % Setup PlutoSDR System object for receiving
 rx = sdrrx('Pluto');
 rx.CenterFrequency = fc;
@@ -49,8 +49,13 @@ rx.OutputDataType = 'double';
 keepRunning = true; % Control variable to keep the loop running
 i=0;
 numErrs = 0;
-allDemodulatedPackets = [];
-while i<10
+previousPhaseShift = 0;
+% Initialize the vector for storing demodulated data
+estimatedTotalSymbols = 1000 * 300;
+allDemodulatedPackets = zeros(estimatedTotalSymbols, 1); % Preallocate with zeros
+% Use an index to keep track of where to insert new data
+insertIndex = 1;
+while i<16
     
     rxData = rx();
     
@@ -103,13 +108,17 @@ while i<10
             [rxSigPhaseCorrected, estPhaseShift, estPhaseShiftDeg] = estimatePhaseOffset(rxSigFrame, barkerSequence, M, rxSigSync, dataStartIdx);
             % Fine frequency sync and FINE phase sync
             rxSigFine = fineSync(rxSigPhaseCorrected);
-
+            %scatterplot(rxSigPhaseCorrected)
+            %scatterplot(rxSigFine);
             % Demodulate
             rxDataDemod = pskdemod(rxSigFine, M, pi/M, 'gray');
+            numErrs =  symerr(singlePacket, rxDataDemod)
 
+            % Append demodulated data to the storage vector
+            allDemodulatedPackets(insertIndex:(insertIndex + dataLength - 1)) = rxDataDemod;
+            insertIndex = insertIndex + dataLength; % Update the insertIndex
             % Assuming 'data' is the originally transmitted data you're comparing against, and 'numErrs' is initialized earlier
-            numErrs =  symerr(data, rxDataDemod)
-            allDemodulatedPackets = [allDemodulatedPackets; rxDataDemod];
+            %numErrs =  symerr(data, rxDataDemod)
         end
     end
 
@@ -120,6 +129,20 @@ while i<10
     i = i+1;
 
 end
+
+scatterplot(rxSigFine);
+eyediagram(rxSigFine,3);
+receivedBits = reshape(de2bi(allDemodulatedPackets, log2(M), 'left-msb').', 1, []);
+
+% Convert Bits Back to Audio Samples
+receivedAudio = typecast(uint16(bin2dec(reshape(char(receivedBits + '0'), 16, []).')), 'int16');
+
+% Convert 16-bit integer audio back to floating-point for playback
+normalizedAudio = double(receivedAudio) / 32767; % Normalize to -1 to 1 range for playback
+
+
+% Play the normalized audio
+sound(normalizedAudio, fss);
 
 
 % Spectrum analyze

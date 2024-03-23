@@ -1,9 +1,8 @@
-function [rxSigFrames, partialPacket, partialBarker, packetCompletes, dataStartIdxs] = extractPackets(inputSignal, barkerSequence, M, dataLength, overlapBuffer, partialPacket)
+function [rxSigFrames, partialPacket, packetCompletes, dataStartIdxs] = extractPackets(inputSignal, barkerSequence, M, dataLength, overlapBuffer, partialPacket)
 
     rxSigFrames = {};
     packetCompletes = [];
     dataStartIdxs = [];
-    partialBarker = [];
     overlapBufferLength = length(overlapBuffer)-1;
     barkerLen = 26;
 
@@ -11,21 +10,21 @@ function [rxSigFrames, partialPacket, partialBarker, packetCompletes, dataStartI
    if ~isempty(partialPacket)
 
             % How much more of the packet we are expecting.
-            neededLength = dataLength - length(partialPacket) + overlapBufferLength - 1;
+            neededLength =  overlapBufferLength + dataLength - length(partialPacket) - 1;
             % Directly complete the packet with the beginning of inputSignal, since
             rxSigFrame = [partialPacket; inputSignal(overlapBufferLength:neededLength)];
             rxSigFrames{end+1} = rxSigFrame; % Store the completed packet
             partialPacket = []; % Clear the partialPacket as it's now been used
             packetCompletes(end+1) = true;
-            dataStartIdxs(end+1) = 1;
+            dataStartIdxs(end+1) = 1; % DATA WILL INCLUDE BARKER CODE FOR PARTIALPACKETS!!!
     end
 
     % PSK modulate barkerSequence used in transmission
     barkerSymbols = pskmod(barkerSequence, M, pi/M, 'gray');
-    detector = comm.PreambleDetector(barkerSymbols.', 'Threshold', 15);
+    detector = comm.PreambleDetector(barkerSymbols.', 'Threshold', 18);
    
     % Detect new packets in the remaining inputSignal
-    idx = detector(inputSignal);
+    idx = detector(inputSignal)
     
     lastDataStartIdx = 0; % Track start index of last detected packet.
 
@@ -45,7 +44,9 @@ function [rxSigFrames, partialPacket, partialBarker, packetCompletes, dataStartI
             dataStartIdxs(end+1) = dataStartIdx;
         else
             % Packet spans into the next buffer, store the partial part
-            partialPacket = inputSignal(dataStartIdx:end);
+            % This is handled by overlapbuffer now
+            % For a partial packet we also include the barkersequence so we can estimate the phase
+            %partialPacket = inputSignal(dataStartIdx:end); 
             break; % Assume only one packet can span buffers at a time
         end
     end
