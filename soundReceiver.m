@@ -55,7 +55,7 @@ estimatedTotalSymbols = 1000 * 300;
 allDemodulatedPackets = zeros(estimatedTotalSymbols, 1); % Preallocate with zeros
 % Use an index to keep track of where to insert new data
 insertIndex = 1;
-while i<16
+while i<20
     
     rxData = rx();
     
@@ -112,7 +112,7 @@ while i<16
             %scatterplot(rxSigFine);
             % Demodulate
             rxDataDemod = pskdemod(rxSigFine, M, pi/M, 'gray');
-            numErrs =  symerr(singlePacket, rxDataDemod)
+            %numErrs =  symerr(singlePacket, rxDataDemod)
 
             % Append demodulated data to the storage vector
             allDemodulatedPackets(insertIndex:(insertIndex + dataLength - 1)) = rxDataDemod;
@@ -130,8 +130,8 @@ while i<16
 
 end
 
-scatterplot(rxSigFine);
-eyediagram(rxSigFine,3);
+%scatterplot(rxSigFine);
+%eyediagram(rxSigFine,3);
 receivedBits = reshape(de2bi(allDemodulatedPackets, log2(M), 'left-msb').', 1, []);
 
 % Convert Bits Back to Audio Samples

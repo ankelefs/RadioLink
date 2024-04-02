@@ -1,5 +1,5 @@
 % Load the audio file
-[audioDataOriginal, fss] = audioread('quack.wav');
+[audioDataOriginal, fss] = audioread('CantinaBand3.wav');
 
 % Ensure audio data is mono by averaging if stereo
 if size(audioDataOriginal, 2) == 2
