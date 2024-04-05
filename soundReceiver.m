@@ -55,7 +55,7 @@ previousPhaseShift = 0;
 %insertIndex = 1;
 
 player = audioDeviceWriter('SampleRate',fss);
-packetsToStore = 10; % Number of packets to store before playback
+packetsToStore = 200; % Number of packets to store before playback
 packetCounter = 0; % Counter to track stored packets
 % Initialize the buffer based on the expected size of rxDataDemod
 demodBuffer = zeros(dataLength * packetsToStore, 1);
@@ -118,8 +118,8 @@ while i<200
             
             %numErrs =  symerr(singlePacket, rxDataDemod)
             % Append demodulated data to the storage vector
-            allDemodulatedPackets(insertIndex:(insertIndex + dataLength - 1)) = rxDataDemod;
-            insertIndex = insertIndex + dataLength; % Update the insertIndex
+            %allDemodulatedPackets(insertIndex:(insertIndex + dataLength - 1)) = rxDataDemod;
+            %insertIndex = insertIndex + dataLength; % Update the insertIndex
             % Assuming 'data' is the originally transmitted data you're comparing against, and 'numErrs' is initialized earlier
             %numErrs =  symerr(data, rxDataDemod)
             
@@ -140,11 +140,11 @@ while i<200
                 receivedBits = reshape(de2bi(demodBuffer, log2(M), 'left-msb').', 1, []);
                 receivedAudio = typecast(uint16(bin2dec(reshape(char(receivedBits + '0'), 16, []).')), 'int16');
                 normalizedAudio = double(receivedAudio) / 32767; % Normalize for playback
-
-                % Assuming you have an initialized audioPlayerRecorder object or use sound
-                player(normalizedAudio);  % Replace 'player' with your playback function
-
-                % Reset buffer, counter, and insert index
+               
+                % Play buffer
+                player(normalizedAudio);  
+                
+                % Reset 
                 demodBuffer = zeros(dataLength * packetsToStore, 1);
                 packetCounter = 0;
                 insertIndexDemod = 1;

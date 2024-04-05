@@ -1,0 +1,13 @@
+import numpy as np
+import sounddevice as sd
+
+filename = 'normalized_audio.bin'
+
+# Read the audio data from the file
+# The dtype should match the format used in fwrite in MATLAB ('double' for 64-bit float, 'single' for 32-bit float)
+audio_data = np.fromfile(filename, dtype=np.double)
+
+# Play the audio
+# Ensure the sample rate (44100 in this example) matches what you expect for your audio data
+sd.play(audio_data, 44100)
+sd.wait()  # Wait until the audio has finished playing

@@ -49,16 +49,24 @@ i=0;
 numErrs = 0;
 previousPhaseShift = 0;
 % Initialize the vector for storing demodulated data
-estimatedTotalSymbols = 1000 * 300;
-allDemodulatedPackets = zeros(estimatedTotalSymbols, 1); % Preallocate with zeros
-player = audioDeviceWriter('SampleRate',fss);
+%estimatedTotalSymbols = 1000 * 300;
+%allDemodulatedPackets = zeros(estimatedTotalSymbols, 1); % Preallocate with zeros
 % Use an index to keep track of where to insert new data
-insertIndex = 1;
-while i<200
+%insertIndex = 1;
+
+pool = gcp('nocreate'); % If no pool, do not create a new one
+if isempty(pool)
+    pool = parpool; % Create a new pool if none exists
+end
+player = audioDeviceWriter('SampleRate', fss);
+packetsToStore = 20; % Number of packets to store before playback
+packetCounter = 0; % Counter to track stored packets
+% Initialize the buffer based on the expected size of rxDataDemod
+demodBuffer = zeros(dataLength * packetsToStore, 1);
+insertIndexDemod = 1; % Start index for inserting data into demodBuffer
+while i<200 
     rxData = rx();
-    
     %scatterplot(rxData);
-    
     
     % Concatenate overlapBuffer with the current samples (rxData)
     currentBuffer = [overlapBuffer; rxData];
@@ -109,22 +117,43 @@ while i<200
             %scatterplot(rxSigFine);
             % Demodulate
             rxDataDemod = pskdemod(rxSigFine, M, pi/M, 'gray');
-            tempPacket = 
+            
             %numErrs =  symerr(singlePacket, rxDataDemod)
             % Append demodulated data to the storage vector
-            allDemodulatedPackets(insertIndex:(insertIndex + dataLength - 1)) = rxDataDemod;
-            insertIndex = insertIndex + dataLength; % Update the insertIndex
+            %allDemodulatedPackets(insertIndex:(insertIndex + dataLength - 1)) = rxDataDemod;
+            %insertIndex = insertIndex + dataLength; % Update the insertIndex
             % Assuming 'data' is the originally transmitted data you're comparing against, and 'numErrs' is initialized earlier
             %numErrs =  symerr(data, rxDataDemod)
-        end
-            receivedBits = reshape(de2bi(rxDataDemod, log2(M), 'left-msb').', 1, []);
+            
+            % Calculate the new insert indices for the demodulated data
+            startIdx = insertIndexDemod;
+            endIdx = insertIndexDemod + dataLength - 1;
 
-            % Convert Bits Back to Audio Samples
-            receivedAudio = typecast(uint16(bin2dec(reshape(char(receivedBits + '0'), 16, []).')), 'int16');
+            % Update the buffer with the new demodulated data
+            demodBuffer(startIdx:endIdx) = rxDataDemod;
 
-            % Convert 16-bit integer audio back to floating-point for playback
-            normalizedAudio = double(receivedAudio) / 32767; % Normalize to -1 to 1 range for playback
-            player(normalizedAudio);  
+            % Update the insert index for the next batch of data
+            insertIndexDemod = endIdx + 1;
+            packetCounter = packetCounter + 1;
+
+            % Check if the buffer is full (20 packets have been stored)
+            if packetCounter == packetsToStore
+                % Convert the buffer to audio and play back
+                receivedBits = reshape(de2bi(demodBuffer, log2(M), 'left-msb').', 1, []);
+                receivedAudio = typecast(uint16(bin2dec(reshape(char(receivedBits + '0'), 16, []).')), 'int16');
+                normalizedAudio = double(receivedAudio) / 32767; % Normalize for playback
+                
+                % Play buffer
+                f = parfeval(pool, @playAudioBlock, 0, normalizedAudio, player);
+                %player(normalizedAudio);  
+                
+                % Reset 
+                demodBuffer = zeros(dataLength * packetsToStore, 1);
+                packetCounter = 0;
+                insertIndexDemod = 1;
+
+            end
+        end  
     end
     
     
@@ -137,14 +166,6 @@ end
 
 %scatterplot(rxSigFine);
 %eyediagram(rxSigFine,3);
-receivedBits = reshape(de2bi(allDemodulatedPackets, log2(M), 'left-msb').', 1, []);
-
-% Convert Bits Back to Audio Samples
-receivedAudio = typecast(uint16(bin2dec(reshape(char(receivedBits + '0'), 16, []).')), 'int16');
-
-% Convert 16-bit integer audio back to floating-point for playback
-normalizedAudio = double(receivedAudio) / 32767; % Normalize to -1 to 1 range for playback
-
 
 % Play the normalized audio
 %sound(normalizedAudio, fss);
@@ -154,5 +175,8 @@ normalizedAudio = double(receivedAudio) / 32767; % Normalize to -1 to 1 range fo
 %spectrumAnalyze(rx);
 %release(spectrumAnalyzerObj);
 % Release the System objects
+s=5
 release(rx);
-
+function playAudioBlock(audioData,player)
+    player(audioData);
+end
