@@ -13,7 +13,7 @@ rx.OutputDataType = 'double';
     % Frequency compensation -------------------------------------------
     coarseSync = comm.CoarseFrequencyCompensator( ...  
         'Modulation','QPSK', ...
-        'FrequencyResolution',10, ...
+        'FrequencyResolution',100, ...
         'SampleRate',fs); %Fs*sps if signal is still oversampled
    
    % Symbol Synchronizer (Timing) --------------------------------------------
@@ -55,7 +55,7 @@ previousPhaseShift = 0;
 %insertIndex = 1;
 
 player = audioDeviceWriter('SampleRate',fss);
-packetsToStore = 15; % Number of packets to store before playback
+packetsToStore = 200; % Number of packets to store before playback
 packetCounter = 0; % Counter to track stored packets
 % Initialize the buffer based on the expected size of rxDataDemod
 demodBuffer = zeros(dataLength * packetsToStore, 1);
@@ -140,11 +140,11 @@ while i<200
                 receivedBits = reshape(de2bi(demodBuffer, log2(M), 'left-msb').', 1, []);
                 receivedAudio = typecast(uint16(bin2dec(reshape(char(receivedBits + '0'), 16, []).')), 'int16');
                 normalizedAudio = double(receivedAudio) / 32767; % Normalize for playback
-
-                    % Play buffer
+               
+                % Play buffer
                 player(normalizedAudio);  
-
-                    % Reset 
+                
+                % Reset 
                 demodBuffer = zeros(dataLength * packetsToStore, 1);
                 packetCounter = 0;
                 insertIndexDemod = 1;

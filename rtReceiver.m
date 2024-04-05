@@ -146,7 +146,7 @@ while i<200
                 % Play buffer
                 f = parfeval(pool, @playAudioBlock, 0, normalizedAudio, player);
                 %player(normalizedAudio);  
-                
+                s=1
                 % Reset 
                 demodBuffer = zeros(dataLength * packetsToStore, 1);
                 packetCounter = 0;
