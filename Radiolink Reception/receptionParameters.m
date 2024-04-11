@@ -1,8 +1,10 @@
 % Parameters.
 audioFrameLength = 256;                 % Corresponds to 32 ms.
-audioBitDepth = 8;
 audioSampleRate = 8000; 
-audioBitDepthMap = '8-bit integer';
+audioBitDepth = 8;
+audioBitDepthMap = 'uint8';
+audioBitDepthMap2 = '8-bit integer';
+packetsToStore = 5;
 
 
 modulationSampleRate = 1e6;             % Corresponds to 8 us symbol length.
@@ -10,10 +12,11 @@ txFrequency = 1.7975e9;                 % Center frequency in Hz.
 modulationOrder = 4;                    % QPSK.
 
 
-barkerCode = [1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 1, 0, 1]';  % Column vector.
-barkerSequence = [barkerCode; barkerCode];              % Twice a single 13-bit Barker code.
+%barkerCode = [1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 1, 0, 1]';  % Column vector.
+barkerSequence = [1, 1, 0, 1]';
+%barkerSequence = [barkerCode; barkerCode];              % Twice a single 13-bit Barker code.
 barkerSequenceSize = length(barkerSequence);         
-garbageBitsArraySize = 20;
+%garbageBitsArraySize = 4;
 
 
 rollOff = 0.5;
@@ -27,10 +30,13 @@ informationDataNumberOfSamples = packetScalingFactor * informationDataSize * sam
 
 
 % Define overlap size based on your preamble length and expected signal characteristics.
-overlapSize = informationDataSize + barkerCodeSize - 1; 
+overlapSize = informationDataSize + barkerSequenceSize - 1; 
 overlapBuffer = zeros(overlapSize, 1);
 partialPacket = [];             % Initialization is crucial before its first use.
-preambleThresholdFactor = 18;
+preambleThresholdFactor = 7;
+
+
+memoryFileSize = packetScalingFactor * audioFrameLength + 1;
 
 
 
@@ -45,12 +51,12 @@ if ~exist('audioRecordings.dat', 'file')
     if fileID ~= -1
         % Initialize memory with 1 status byte and audioFrameLength times packetScalingFactor information bytes,
         % all zeros.
-        fwrite(fileID, zeros([(packetScalingFactor * audioFrameLength) + 1, 1]), audioBitDepthMap);
+        fwrite(fileID, zeros(memoryFileSize, 1), audioBitDepthMap);
         fclose(fileID);
     else
         error('MATLAB:demo:answer:cannotOpenFile', ...
               'Cannot open file "%s": %s.', audioRecordings, msg);
-    end
+    end 
 end
 
 

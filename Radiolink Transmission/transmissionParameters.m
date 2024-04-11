@@ -1,7 +1,9 @@
 % Parameters.
-audioFrameLength = 256;                  % Corresponds to 32 ms.
+audioFrameLength = 256;                 % Corresponds to 32 ms.
 audioSampleRate = 8000; 
-audioBitDepthMap = '8-bit integer';
+audioBitDepth = 8;
+audioBitDepthMap = 'uint8';
+audioBitDepthMap2 = '8-bit integer';
 
 
 modulationSampleRate = 1e6;             % Corresponds to 8 us symbol length.
@@ -22,6 +24,9 @@ samplesPerSymbol = 8;
 packetScalingFactor = 1;                % Number of 32 ms audio packets.
 
 
+memoryFileSize = packetScalingFactor * audioFrameLength + 1;
+
+
 
 
 % Initialize shared memory.
@@ -34,7 +39,7 @@ if ~exist('audioRecordings.dat', 'file')
     if fileID ~= -1
         % Initialize memory with 1 status byte and audioFrameLength times packetScalingFactor information bytes,
         % all zeros.
-        fwrite(fileID, zeros([(packetScalingFactor * audioFrameLength) + 1, 1]), audioBitDepthMap);
+        fwrite(fileID, zeros(memoryFileSize, 1), audioBitDepthMap);
         fclose(fileID);
     else
         error('MATLAB:demo:answer:cannotOpenFile', ...
@@ -44,4 +49,4 @@ end
 
 
 % Memory map the file for quick access.
-memory = memmapfile('audioRecordings.dat', 'Writable', true, 'Format', 'uint8');
+memory = memmapfile('audioRecordings.dat', 'Writable', true, 'Format', audioBitDepthMap);

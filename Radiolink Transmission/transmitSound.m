@@ -30,30 +30,6 @@ txRadioObject.Gain = 0;
 
 
 
-% This code is the same for both server initiations.
-if ~exist('audioRecordings.dat', 'file')
-    fileID = fopen('audioRecordings.dat', 'w');
-    
-
-    % Create the shared file if it is not already there.
-    if fileID ~= -1
-        % Initialize memory with 1 status byte and 256 information bytes,
-        % all zeros.
-        fwrite(fileID, zeros([audioFrameLength + 1, 1]), audioBitDepthMap);
-        fclose(fileID);
-    else
-        error('MATLAB:demo:answer:cannotOpenFile', ...
-              'Cannot open file "%s": %s.', audioRecordings, msg);
-    end
-end
-
-
-% Memory map the file for quick access.
-memory = memmapfile('audioRecordings.dat', 'Writable', true, 'Format', 'uint8');
-
-
-
-
 % Keep running.
 counter = 0;
 

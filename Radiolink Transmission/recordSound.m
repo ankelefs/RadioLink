@@ -1,4 +1,4 @@
-function recordSound
+   function recordSound
 
 
 
@@ -10,7 +10,7 @@ disp("#############################");
 disp(" ");
 
 
-
+ 
 
 % Initializations.
 run('transmissionParameters.m');
@@ -18,9 +18,9 @@ run('transmissionParameters.m');
 
 % Audio recorder object.
 recordAudio = audioDeviceReader( ...
-    'SampleRate', audioSampleRate, ...    
-    'SamplesPerFrame', audioFrameLength, ...
-    'BitDepth', audioBitDepthMap, ...
+    'SampleRate', audioSampleRate, ...      
+    'SamplesPerFrame', audioFrameLength * packetScalingFactor, ...
+    'BitDepth', audioBitDepthMap2, ...
     'Device', 'Default' ...                 % Audio input device.
     );
 
