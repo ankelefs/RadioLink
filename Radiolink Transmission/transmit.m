@@ -1,7 +1,7 @@
-function transmit(dataForTransmission, pulseShapeFilter, modulationOrder, samplesPerSymbol, txRadioObject, counter)
- 
-% Modulate the data packet with grey-coding.
-txSignal = pskmod(dataForTransmission, modulationOrder, pi/modulationOrder, 'gray', 'InputType', 'bit');
+function transmit(txSignal, pulseShapeFilter, samplesPerSymbol, txRadioObject, counter)
+
+
+
     
 % Apply pulse shape filter and upsample with samplesPerSymbol
 txSignal_Filtered = upfirdn(txSignal, pulseShapeFilter, samplesPerSymbol);

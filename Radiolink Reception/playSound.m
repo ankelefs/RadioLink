@@ -38,17 +38,19 @@ while true
     end
   
     
-    % When status byte is not zero: fetch memory data and set status byte
+    % When status byte is not zero: fetch needed memory data and set status byte
     % back to zero
-    audioRecording = memory.Data(2:end);
+    numberOfSoundPackets = memory.Data(1);
+    audioRecording = memory.Data(2:numberOfSoundPackets * audioFrameLength);
     memory.Data(1) = 0;
-    disp("Recording #" + counter + " fetched from memory.")
+    disp("Packet #" + counter + " fetched from memory.")
+    disp("Packet #" + counter + " has " + numberOfSoundPackets + " audio frames.")
     
     
     % Decode audio recording data and playback.
-    audioRecording = [round((audioRecording / 128) + 1)]
+    audioRecording = [round((audioRecording / 128) + 1)];
     playAudio(audioRecording);
-    disp("Recording... #" + counter + " played."); 
+    disp("Packet #" + counter + "... played."); 
     
     
     counter = counter + 1;

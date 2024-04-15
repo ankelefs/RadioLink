@@ -12,8 +12,16 @@ modulationOrder = 4;                    % QPSK.
 
 
 barkerCode = [1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 1, 0, 1]';  % Column vector.
-barkerSequence = [barkerCode; barkerCode];              % Twice a single 13-bit Barker code.
-garbageBitsArraySize = 20;
+barkerSequence = barkerCode;
+% Create the symbol representation of the Barker code interpreting each
+% element as an integer/symbol.
+barkerSymbols = pskmod(barkerSequence, modulationOrder, pi/modulationOrder, 'gray', 'InputType', 'integer');
+
+
+% Create garbage bits for filter ramp up.
+garbageBits = [1, 0, 0, 1, 1, 0, 0, 0]';
+% Create the symbol representation of the garbage bits.
+garbageSymbols = pskmod(garbageBits, modulationOrder, pi/modulationOrder, 'gray', 'InputType', 'bit');
 
 
 rollOff = 0.5;
@@ -37,7 +45,7 @@ if ~exist('audioRecordings.dat', 'file')
 
     % Create the shared file if it is not already there.
     if fileID ~= -1
-        % Initialize memory with 1 status byte and audioFrameLength times packetScalingFactor information bytes,
+        % Initialize memory with 1 status element and audioFrameLength times packetScalingFactor information elements,
         % all zeros.
         fwrite(fileID, zeros(memoryFileSize, 1), audioBitDepthMap);
         fclose(fileID);

@@ -1,19 +1,13 @@
 function [rxSignal_PhaseCorrected, estimatedPhaseShift, estimatedPhaseShiftDegrees] = estimatePhaseOffset( ...
     rxSignal_Frame, ...
     rxSignal_SymbolSynchronized, ...
-    barkerSequence, ...
-    modulationOrder, ...
     dataStartIndex, ...
-    previousPhaseShift ...
+    previousPhaseShift, ...
+    barkerSymbols, ...
+    numPilotSymbols ...
     )
     
 
-
-
-% Estimate and correct phase offset in the received signal frame by
-% using known pilot symbols.
-expectedPilotSymbols = pskmod(barkerSequence, modulationOrder, pi/modulationOrder, 'gray', 'InputType', 'bit');
-numPilotSymbols = length(expectedPilotSymbols);
 
 
 if dataStartIndex == 1
@@ -23,11 +17,11 @@ if dataStartIndex == 1
     estimatedPhaseShift = previousPhaseShift;
     estimatedPhaseShiftDegrees = rad2deg(estimatedPhaseShift);
 else
-    receivedPilotSymbols = rxSignal_SymbolSynchronized(dataStartIndex - numPilotSymbols:dataStartIndex - 1)
+    receivedPilotSymbols = rxSignal_SymbolSynchronized(dataStartIndex - numPilotSymbols:dataStartIndex - 1);
 
 
     % Calculate complex phase differences
-    complexDifferences = receivedPilotSymbols .* conj(expectedPilotSymbols.');
+    complexDifferences = receivedPilotSymbols .* conj(barkerSymbols);
 
 
     % Average the phase differences.

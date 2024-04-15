@@ -1,15 +1,13 @@
-function dataPacket = prepareDataForTransmission(transmissionData, barkerSequence, audioBitDepth, garbageBitsArraySize)
+function dataPacket = prepareDataForTransmission(soundData, barkerSymbols, garbageSymbols, modulationOrder, audioBitDepth)
 
 
-
-
-% Create garbage bits for filter ramp up.
-garbageBits = randi([0, 1], garbageBitsArraySize, 1);
 
 
 % Convert transmission data in UINT8 into binary.
-transmissionDataBinary = int2bit(transmissionData, audioBitDepth);
+soundDataBinary = int2bit(soundData, audioBitDepth);
 
 
-% Concatenate into a total dataPacket.
-dataPacket = [garbageBits; barkerSequence; transmissionDataBinary; garbageBits];
+% Modulate the transmission data into symbols, using grey-coding, and concatenate 
+% all transmission data into a total data packet.
+transmissionDataSymbols = pskmod(soundDataBinary, modulationOrder, pi/modulationOrder, 'gray', 'InputType', 'bit');
+dataPacket = [garbageSymbols; barkerSymbols; transmissionDataSymbols; garbageSymbols];

@@ -1,13 +1,15 @@
-function audioDataHandler( ...
+function audioDataPackets = audioDataHandler( ...
     rxSignal_Frames, ...
     rxSignal_SymbolSynchronized, ...
     packetCompletions, ...
-    packetsToStore, ...
     dataStartIndexes, ...
     fineSynchronizerObject, ...
-    informationDataSize, ...
-    barkerSequence, ...
-    modulationOrder ...
+    modulationOrder, ...
+    barkerSymbols, ...
+    numPilotSymbols, ...
+    audioFrameLength, ...
+    audioBitDepth, ...
+    counter ...
     )
 
 
@@ -16,13 +18,8 @@ function audioDataHandler( ...
 
 % Initializations.
 previousPhaseShift = 0;
-
-
-% Initialize the buffer based on the expected size of demodulated receive data.
-demodulationBuffer = zeros(informationDataSize * packetsToStore, 1);
-insertIndexDemodulation = 1;    % Start index for inserting data into demodulation buffer.
-
-
+localCounter = 1;
+audioDataPackets = [];
 
 
 % Iterate through each extracted packet.
@@ -43,10 +40,10 @@ for packetIndex = 1:length(rxSignal_Frames)
         [rxSignal_PhaseCorrected, estimatedPhaseShift, estimatedPhaseShiftDegrees] = estimatePhaseOffset( ...
             rxSignal_Frame, ...
             rxSignal_SymbolSynchronized, ...
-            barkerSequence, ...
-            modulationOrder, ...
             dataStartIndex, ...
-            previousPhaseShift ...
+            previousPhaseShift, ...
+            barkerSymbols, ...
+            numPilotSymbols ...
             );
         
         
@@ -54,36 +51,16 @@ for packetIndex = 1:length(rxSignal_Frames)
         rxSignal_FineAdjusted = fineSynchronizerObject(rxSignal_PhaseCorrected);
         
         
-        % Demodulate.
+        % Demodulate back into audio bits.
         rxSignal_Demodulated = pskdemod(rxSignal_FineAdjusted, modulationOrder, pi/modulationOrder, 'gray', 'OutputType', 'bit');
+
         
-        
-        % Calculate the new insert indices for the demodulated data.
-        startIndex = insertIndexDemodulation;
-        endIndex = insertIndexDemodulation + dataLength - 1;
-
-
-        % Update the buffer with the new demodulated data
-        demodulationBuffer(startIndex:endIndex) = rxSignal_Demodulated;
-
-
-        % Update the insert index for the next batch of data
-        insertIndexDemodulation = endIndex + 1;
-        packetCounter = packetCounter + 1;
-
-
-        if packetCounter == packetsToStore
-            % Send the demodulated data (audio recording) to memory and set status
-            % byte to one.
-            memory.Data(2:end) = audioRecording;
-            memory.Data(1) = 1;
-            disp("Recording #" + counter + " stored to memory.") 
-
-                
-            % Reset the dynamic parameters.
-            demodulationBuffer = zeros(dataLength * packetsToStore, 1);
-            packetCounter = 0;
-            insertIndexDemodulation = 1;
-        end
+        % Decode into integer values.
+        %test = bit2int(rxSignal_Demodulated, audioBitDepth)
+        audioDataPackets = [audioDataPackets; bit2int(rxSignal_Demodulated, audioBitDepth)];
+    
+    
+        disp("Packet    #" + counter + "." + localCounter + " decoded.")
+        localCounter = localCounter + 1;
     end  
 end

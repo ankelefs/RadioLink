@@ -14,6 +14,7 @@ disp(" ");
 
 % Initializations.
 run('transmissionParameters.m');
+[audioDataOriginal, fss] = audioread('CantinaBand3.wav');
 
 
 % Pulse shape filter object.
@@ -42,18 +43,18 @@ while true
     end
 
 
-    % When status byte is not zero: fetch memory data and set status byte
-    % back to zero
-    transmissionData = memory.Data(2:end);
+    % When status element is not zero: fetch memory data and set status
+    % element back to zero
+    soundData = memory.Data(2:end);
     memory.Data(1) = 0;
     disp("Recording #" + counter + " fetched from memory.")
     
     
     % Prepare data for transmission and then transmit.
-    transmissionDataPacket = prepareDataForTransmission(transmissionData, barkerSequence, audioBitDepth, garbageBitsArraySize);
-    transmit(transmissionDataPacket, ...
+    txSignal = prepareDataForTransmission(soundData, barkerSymbols, garbageSymbols, modulationOrder, audioBitDepth);
+    transmit( ...
+        txSignal, ...
         rootRaisedCosineFilter, ...
-        modulationOrder, ...
         samplesPerSymbol, ...
         txRadioObject, ...
         counter ...
