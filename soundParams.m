@@ -1,21 +1,21 @@
 % Load the audio file
-[audioDataOriginal, fss] = audioread('CantinaBand3.wav');
+%[audioDataOriginal, fss] = audioread('CantinaBand3.wav');
 fs = 1e6;          % Sample rate in Hz
 fc = 1.7975e9;      % Center frequency in Hz (DO NOT USE ILLEGAL BANDS)
 
 
 % Proceed with mono conversion if needed
-if size(audioDataOriginal, 2) == 2
-    audioData = mean(audioDataOriginal, 2);
-else
-    audioData = audioDataOriginal;
-end
+%if size(audioDataOriginal, 2) == 2
+%    audioData = mean(audioDataOriginal, 2);
+%else
+%    audioData = audioDataOriginal;
+%end
 
 % Desired sampling rate
 newFs = 16000;
 
 % Resample the audio data
-audioDataResampled = resample(audioData, newFs, fss);
+%audioDataResampled = resample(audioData, newFs, fss);
 %sound(audioDataResampled, 16000);
 
 %Create random qpsk signal

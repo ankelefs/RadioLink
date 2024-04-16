@@ -42,7 +42,11 @@ rx.OutputDataType = 'double';
 
 
 
-
+    % PSK modulate barkerSequence used in transmission
+    barkerSymbols = pskmod(barkerSequence, M, pi/M, 'gray');
+    detector = comm.PreambleDetector(barkerSymbols.', 'Threshold', 18); 
+    
+    
 % Main processing loop
 keepRunning = true; % Control variable to keep the loop running
 i=0;
@@ -60,7 +64,7 @@ packetCounter = 0; % Counter to track stored packets
 % Initialize the buffer based on the expected size of rxDataDemod
 demodBuffer = zeros(dataLength * packetsToStore, 1);
 insertIndexDemod = 1; % Start index for inserting data into demodBuffer
-while i<400
+while true
     rxData = rx();
     
     %scatterplot(rxData);
@@ -94,7 +98,7 @@ while i<400
     
 
     %----------------------------FRAME SYNC----------------------------------
-    [rxSigFrames, partialPacket, packetCompletes,dataStartIdxs] = extractPackets(rxSigSync, barkerSequence, M, dataLength, overlapBuffer, partialPacket);
+    [rxSigFrames, packetCompletes,dataStartIdxs] = extractPackets(rxSigSync, detector, M, dataLength, overlapBuffer);
     %packetComplete;
     %scatterplot(rxSigFrame);
     % Iterate through each extracted packet
