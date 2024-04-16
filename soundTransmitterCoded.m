@@ -58,4 +58,22 @@ disp('Starting transmission...');
 transmitRepeat(tx, modulatedSymbols); % Continuously transmit the signal
 
 
+function y = muLawCompress(x, mu)
+    % Mu-law compressor function
+    % x: Input audio signal
+    % mu: Compression parameter, typically 255 for audio
+    % y: Compressed audio signal
+    maxVal = max(abs(x));
+    y = sign(x) .* log(1 + mu * abs(x) / maxVal) / log(1 + mu);
+end
+
+function x = muLawDecompress(y, mu)
+    % Mu-law decompressor function
+    % y: Compressed audio signal
+    % mu: Compression parameter, typically 255 for audio
+    % x: Decompressed audio signal
+    maxVal = 1;  % Normalized to 1 in compression
+    x = sign(y) .* (1 / mu) * ((1 + mu).^abs(y) - 1) * maxVal;
+end
+
 

@@ -1,7 +1,7 @@
 
 % Setup parameters
 run('soundParams.m');
-load('fasit.mat')
+%load('fasit.mat')
 % Setup PlutoSDR System object for receiving
 rx = sdrrx('Pluto');
 rx.CenterFrequency = fc;
@@ -54,13 +54,13 @@ previousPhaseShift = 0;
 % Use an index to keep track of where to insert new data
 %insertIndex = 1;
 
-player = audioDeviceWriter('SampleRate',fss);
-packetsToStore = 15; % Number of packets to store before playback
+player = audioDeviceWriter('SampleRate',newFs);
+packetsToStore = 1; % Number of packets to store before playback
 packetCounter = 0; % Counter to track stored packets
 % Initialize the buffer based on the expected size of rxDataDemod
 demodBuffer = zeros(dataLength * packetsToStore, 1);
 insertIndexDemod = 1; % Start index for inserting data into demodBuffer
-while i<200
+while i<400
     rxData = rx();
     
     %scatterplot(rxData);
@@ -134,17 +134,26 @@ while i<200
             insertIndexDemod = endIdx + 1;
             packetCounter = packetCounter + 1;
 
-            % Check if the buffer is full (20 packets have been stored)
+            % Check if the buffer is full 
             if packetCounter == packetsToStore
-                % Convert the buffer to audio and play back
+                
+                %16 BIT CONVERTER
                 receivedBits = reshape(de2bi(demodBuffer, log2(M), 'left-msb').', 1, []);
                 receivedAudio = typecast(uint16(bin2dec(reshape(char(receivedBits + '0'), 16, []).')), 'int16');
-                normalizedAudio = double(receivedAudio) / 32767; % Normalize for playback
+                normalizedAudio = (double(receivedAudio)) / 32767; % Normalize for playback
+                
+                %8 BIT
+                %receivedBits = reshape(de2bi(demodBuffer, log2(M), 'left-msb').', 1, []);
+                %receivedAudio8Bit = typecast(uint8(bin2dec(reshape(char(receivedBits + '0'), 8, []).')), 'int8');
+                %receivedAudio8Bit = uint8(bin2dec(reshape(char(receivedBits + '0'), 8, []).'));
+                %normalizedAudio = (double(receivedAudio8Bit) - 128) / 128;
 
-                    % Play buffer
+
+                % Play buffer
+                %sound(normalizedAudio, newFs);
                 player(normalizedAudio);  
 
-                    % Reset 
+                % Reset 
                 demodBuffer = zeros(dataLength * packetsToStore, 1);
                 packetCounter = 0;
                 insertIndexDemod = 1;
@@ -153,7 +162,6 @@ while i<200
         end  
     end
     
-    
     % Assuming 'rxData' is the raw data buffer you're processing
     % Update overlapBuffer with the last part of rxData for the next iteration
     % Ensure 'overlapSize' is defined and initialized correctly
@@ -161,8 +169,16 @@ while i<200
     i = i+1;
 end
 
-%scatterplot(rxSigFine);
+scatterplot(rxData);
+scatterplot(rxSigFiltered);
+scatterplot(rxSigCoarse);
+scatterplot(rxSigSync);
+scatterplot(rxSigPhaseCorrected);
+scatterplot(rxSigFine);
+
+%eyediagram(rxSigSync,3);
 %eyediagram(rxSigFine,3);
+
 %receivedBits = reshape(de2bi(allDemodulatedPackets, log2(M), 'left-msb').', 1, []);
 
 % Convert Bits Back to Audio Samples

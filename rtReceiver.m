@@ -9,6 +9,10 @@ rx.BasebandSampleRate = fs;
 rx.SamplesPerFrame = numSamples;
 rx.OutputDataType = 'double';
 
+host = 'localhost'; % Python server IP
+port = 12345; % Python server port
+tcpClient = tcpclient(host, port);
+
 %Define objects
     % Frequency compensation -------------------------------------------
     coarseSync = comm.CoarseFrequencyCompensator( ...  
@@ -54,12 +58,9 @@ previousPhaseShift = 0;
 % Use an index to keep track of where to insert new data
 %insertIndex = 1;
 
-pool = gcp('nocreate'); % If no pool, do not create a new one
-if isempty(pool)
-    pool = parpool; % Create a new pool if none exists
-end
-player = audioDeviceWriter('SampleRate', fss);
-packetsToStore = 20; % Number of packets to store before playback
+
+%player = audioDeviceWriter('SampleRate',fss);
+packetsToStore = 1; % Number of packets to store before playback
 packetCounter = 0; % Counter to track stored packets
 % Initialize the buffer based on the expected size of rxDataDemod
 demodBuffer = zeros(dataLength * packetsToStore, 1);
@@ -117,7 +118,14 @@ while i<200
             %scatterplot(rxSigFine);
             % Demodulate
             rxDataDemod = pskdemod(rxSigFine, M, pi/M, 'gray');
-            
+            receivedBits = reshape(de2bi(rxDataDemod, log2(M), 'left-msb').', 1, []);
+            receivedAudio = typecast(uint16(bin2dec(reshape(char(receivedBits + '0'), 16, []).')), 'int16');
+            normalizedAudio = double(receivedAudio) / 32767; % Normalize for playback
+               
+            dataToSend = typecast(single(normalizedAudio), 'uint8');
+    
+            % Send the serialized data
+            write(tcpClient, dataToSend);
             %numErrs =  symerr(singlePacket, rxDataDemod)
             % Append demodulated data to the storage vector
             %allDemodulatedPackets(insertIndex:(insertIndex + dataLength - 1)) = rxDataDemod;
@@ -125,34 +133,10 @@ while i<200
             % Assuming 'data' is the originally transmitted data you're comparing against, and 'numErrs' is initialized earlier
             %numErrs =  symerr(data, rxDataDemod)
             
-            % Calculate the new insert indices for the demodulated data
-            startIdx = insertIndexDemod;
-            endIdx = insertIndexDemod + dataLength - 1;
+            
 
-            % Update the buffer with the new demodulated data
-            demodBuffer(startIdx:endIdx) = rxDataDemod;
-
-            % Update the insert index for the next batch of data
-            insertIndexDemod = endIdx + 1;
-            packetCounter = packetCounter + 1;
-
-            % Check if the buffer is full (20 packets have been stored)
-            if packetCounter == packetsToStore
-                % Convert the buffer to audio and play back
-                receivedBits = reshape(de2bi(demodBuffer, log2(M), 'left-msb').', 1, []);
-                receivedAudio = typecast(uint16(bin2dec(reshape(char(receivedBits + '0'), 16, []).')), 'int16');
-                normalizedAudio = double(receivedAudio) / 32767; % Normalize for playback
                 
-                % Play buffer
-                f = parfeval(pool, @playAudioBlock, 0, normalizedAudio, player);
-                %player(normalizedAudio);  
-                s=1
-                % Reset 
-                demodBuffer = zeros(dataLength * packetsToStore, 1);
-                packetCounter = 0;
-                insertIndexDemod = 1;
-
-            end
+               
         end  
     end
     
@@ -175,8 +159,5 @@ end
 %spectrumAnalyze(rx);
 %release(spectrumAnalyzerObj);
 % Release the System objects
-s=5
 release(rx);
-function playAudioBlock(audioData,player)
-    player(audioData);
-end
+

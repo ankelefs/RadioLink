@@ -24,7 +24,7 @@ function [rxSigFrames, partialPacket, packetCompletes, dataStartIdxs] = extractP
     detector = comm.PreambleDetector(barkerSymbols.', 'Threshold', 18);
    
     % Detect new packets in the remaining inputSignal
-    idx = detector(inputSignal);
+    idx = detector(inputSignal)
     
     lastDataStartIdx = 0; % Track start index of last detected packet.
 

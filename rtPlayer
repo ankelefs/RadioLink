@@ -1,13 +1,32 @@
+import socket
+import pyaudio
 import numpy as np
-import sounddevice as sd
 
-filename = 'normalized_audio.bin'
+# TCP server setup
+host = 'localhost'
+port = 12345
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+s.bind((host, port))
+s.listen(1)
+conn, addr = s.accept()
 
-# Read the audio data from the file
-# The dtype should match the format used in fwrite in MATLAB ('double' for 64-bit float, 'single' for 32-bit float)
-audio_data = np.fromfile(filename, dtype=np.double)
+# PyAudio setup
+p = pyaudio.PyAudio()
+stream = p.open(format=pyaudio.paFloat32, channels=1, rate=22050, output=True)
 
-# Play the audio
-# Ensure the sample rate (44100 in this example) matches what you expect for your audio data
-sd.play(audio_data, 44100)
-sd.wait()  # Wait until the audio has finished playing
+try:
+    while True:
+        # Receive data
+        data = conn.recv(2048)  # Adjust buffer size if needed
+        if not data:
+            break
+        # Convert bytes back to float32 array
+        audioData = np.frombuffer(data, dtype=np.float32)
+        # Play audio
+        stream.write(audioData.tobytes())
+finally:
+    stream.stop_stream()
+    stream.close()
+    p.terminate()
+    conn.close()
+    s.close()

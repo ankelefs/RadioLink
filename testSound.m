@@ -1,4 +1,8 @@
-% Load the audio file
+pool = gcp('nocreate'); % If no pool exists, do not create a new one.
+if isempty(pool)
+    pool = parpool; % Create a new pool if none exists.
+end
+
 [audioDataOriginal, fss] = audioread('CantinaBand3.wav');
 
 % Ensure audio data is mono by averaging if stereo
@@ -37,14 +41,10 @@ if any(isnan(normalizedAudio)) || any(isinf(normalizedAudio))
     error('Normalized audio contains NaNs or Infs.');
 end
 
-% Play the normalized audio
-sound(normalizedAudio, fss);
+% Use parfeval to play audio in parallel
+f = parfeval(pool, @playAudioInParallel, 0, normalizedAudio, fss); % 0 indicates no output arguments
 
-% Debugging: Plot Original vs. Received Audio
-figure;
-subplot(2,1,1);
-plot(audioDataOriginal(1:1000));
-title('Original Audio');
-subplot(2,1,2);
-plot(normalizedAudio(1:1000));
-title('Received Audio');
+
+function playAudioInParallel(audioData, fss)
+    sound(audioData, fss);
+end

@@ -1,7 +1,7 @@
 
 % Setup parameters
 run('soundParams.m');
-load('fasit.mat')
+%load('fasit.mat')
 % Setup PlutoSDR System object for receiving
 rx = sdrrx('Pluto');
 rx.CenterFrequency = fc;
@@ -13,7 +13,7 @@ rx.OutputDataType = 'double';
     % Frequency compensation -------------------------------------------
     coarseSync = comm.CoarseFrequencyCompensator( ...  
         'Modulation','QPSK', ...
-        'FrequencyResolution',100, ...
+        'FrequencyResolution',10, ...
         'SampleRate',fs); %Fs*sps if signal is still oversampled
    
    % Symbol Synchronizer (Timing) --------------------------------------------
@@ -53,13 +53,15 @@ previousPhaseShift = 0;
 %allDemodulatedPackets = zeros(estimatedTotalSymbols, 1); % Preallocate with zeros
 % Use an index to keep track of where to insert new data
 %insertIndex = 1;
+packetsToStore = 15;
+demodBuffer = zeros(dataLength * packetsToStore, 1);
 
-player = audioDeviceWriter('SampleRate',fss);
-packetsToStore = 200; % Number of packets to store before playback
+player = audioDeviceWriter('SampleRate', fss);
+ % Number of packets to store before playback
 packetCounter = 0; % Counter to track stored packets
 % Initialize the buffer based on the expected size of rxDataDemod
-demodBuffer = zeros(dataLength * packetsToStore, 1);
 insertIndexDemod = 1; % Start index for inserting data into demodBuffer
+
 while i<200
     rxData = rx();
     
@@ -140,11 +142,11 @@ while i<200
                 receivedBits = reshape(de2bi(demodBuffer, log2(M), 'left-msb').', 1, []);
                 receivedAudio = typecast(uint16(bin2dec(reshape(char(receivedBits + '0'), 16, []).')), 'int16');
                 normalizedAudio = double(receivedAudio) / 32767; % Normalize for playback
-               
+
                 % Play buffer
                 player(normalizedAudio);  
-                
-                % Reset 
+
+                    % Reset 
                 demodBuffer = zeros(dataLength * packetsToStore, 1);
                 packetCounter = 0;
                 insertIndexDemod = 1;
@@ -152,7 +154,6 @@ while i<200
             end
         end  
     end
-    
     
     % Assuming 'rxData' is the raw data buffer you're processing
     % Update overlapBuffer with the last part of rxData for the next iteration

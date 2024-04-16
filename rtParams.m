@@ -34,9 +34,9 @@ rrcFilter = rcosdesign(rolloff, span, sps);
 
 % Packetization parameters
 dataLength = 1000; % Number of symbols per packet
-numSamples = 40*dataLength*sps; % Number of samples per frame (MUST BE AT LEAST 2 x PACKET LENGTH)
+numSamples = 20*dataLength*sps; % Number of samples per frame (MUST BE AT LEAST 2 x PACKET LENGTH)
 % Assuming numSamples is defined in 'params.m'
-overlapSize = 1025; % Define overlap size based on your preamble length and expected signal characteristics
+overlapSize = dataLength+25; % Define overlap size based on your preamble length and expected signal characteristics
 overlapBuffer = zeros(overlapSize, 1); % Buffer to store the last part of the previous buffer for overlap
 partialPacket = []; % Initialization is crucial before its first use
 
