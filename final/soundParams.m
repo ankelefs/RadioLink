@@ -1,10 +1,10 @@
 % Load the audio file
 %[audioDataOriginal, fss] = audioread('CantinaBand3.wav');
-fs = 1e6;          % Sample rate in Hz
+fs = 1e6;           % Sample rate in Hz
 fc = 1.7975e9;      % Center frequency in Hz (DO NOT USE ILLEGAL BANDS)
 
 
-% Proceed with mono conversion if needed
+% mono conversion if needed
 %if size(audioDataOriginal, 2) == 2
 %    audioData = mean(audioDataOriginal, 2);
 %else
@@ -18,7 +18,6 @@ newFs = 16000;
 %audioDataResampled = resample(audioData, newFs, fss);
 %sound(audioDataResampled, 16000);
 
-%Create random qpsk signal
 % Modulate signal M-PSK 
 M = 4;
 
@@ -39,13 +38,12 @@ rrcFilter = rcosdesign(rolloff, span, sps);
 
 
 
-% Packetization parameters
+% Packet parameters
 barkerLength = 26;
-headerLength = 4;  % THIS IS IN BITS
 dataLength = 1000; % Number of symbols per packet
 numSamples =10*dataLength*sps; % Number of samples per frame (MUST BE AT LEAST 2 x PACKET LENGTH)
-% Assuming numSamples is defined in 'params.m'
-overlapSize = dataLength + headerLength + 25; % Define overlap size based on your preamble length and expected signal characteristics
+
+overlapSize = dataLength + 25; % Define overlap size based on your preamble length and expected signal characteristics
 overlapBuffer = zeros(overlapSize, 1); % Buffer to store the last part of the previous buffer for overlap
-partialPacket = []; % Initialization is crucial before its first use
+
 

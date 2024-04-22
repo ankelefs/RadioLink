@@ -8,8 +8,7 @@ function [rxSigPhaseCorrected, estPhaseShift, estPhaseShiftDeg] = estimatePhaseO
     numPilotSymbols = length(expectedPilotSymbols);
    
     if dataStartIdx == 1
-       % If the packet comes from previouspackage, use the previous phase
-       % shift for simplicity, was pain to fix with how it is set up now
+       % If the preamble cannot be extracted, use previous phase shift
        rxSigPhaseCorrected = rxSigFrame * exp(-1i * previousPhaseShift);
        estPhaseShift = previousPhaseShift;
        estPhaseShiftDeg = rad2deg(estPhaseShift);
@@ -17,9 +16,7 @@ function [rxSigPhaseCorrected, estPhaseShift, estPhaseShiftDeg] = estimatePhaseO
     else
         
         receivedPilotSymbols = rxSigSync(dataStartIdx-numPilotSymbols:dataStartIdx-1);
-    
-
-        %receivedPilotSymbols = rxSigSync(dataStartIdx-numPilotSymbols:dataStartIdx-1);
+   
         % Calculate complex phase differences
         complexDiffs = receivedPilotSymbols .* conj(expectedPilotSymbols.');
 
